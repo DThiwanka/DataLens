@@ -12,7 +12,7 @@
   - Automatic delimiter detection (comma `,`, tab `\t`, semicolon `;`, pipe `|`).
   - Handles complex quoted fields, escaped quotes, newlines within cells, and Unicode text.
   - Automatic column header deduplication (e.g. `['Name', 'Name']` ➔ `['Name', 'Name_2']`).
-  - Validates file size limits (15 MB), row limits (100,000), and column limits (200).
+  - Validates file size limits (250 MB), row limits (1,500,000), and column limits (500) with streaming chunk processing.
   - Built-in curated sample datasets for instant 1-click exploration.
 - **Deep Statistical Profiling & Dashboard**:
   - Total rows, columns, cells, and file size footprint.

@@ -247,6 +247,34 @@ async function runTests() {
     assert(true, `Properly rejected dataset with no data rows: ${err.message}`);
   }
 
+  // 11. Large Dataset & Streaming Parser Verification
+  console.log('\nGroup 11: Large Dataset & Chunk Streaming Support');
+  const largeRows = ['ID,Item,Amount,Category'];
+  for (let i = 1; i <= 10000; i++) {
+    largeRows.push(`${i},Item_${i % 50},${(i * 1.25).toFixed(2)},Cat_${i % 5}`);
+  }
+  const largeCsvString = largeRows.join('\n');
+
+  let progressCalled = false;
+  const largeParsed = await parseDelimitedData(largeCsvString, {
+    fileName: 'large_dataset.csv',
+    onProgress: (p) => {
+      if (p.rowsLoaded > 0) progressCalled = true;
+    },
+  });
+
+  assert(largeParsed.rowCount === 10000, `Parsed all 10,000 rows (got ${largeParsed.rowCount})`);
+  assert(largeParsed.columns.length === 4, `Parsed 4 schema columns (got ${largeParsed.columns.length})`);
+  assert(largeParsed.data[9999].ID === '10000', `Preserved 10,000th row data (ID: ${largeParsed.data[9999].ID})`);
+
+  // Test row capping / truncation limit
+  const cappedParsed = await parseDelimitedData(largeCsvString, {
+    fileName: 'capped_dataset.csv',
+    maxRows: 500,
+  });
+  assert(cappedParsed.rowCount === 500, `Successfully capped large dataset at 500 rows (got ${cappedParsed.rowCount})`);
+  assert(cappedParsed.truncated === true, 'Flagged truncated state as true');
+
   console.log('\n=================================================');
   console.log(`QA & Stability Verification Complete: ${passedTests}/${totalTests} tests passed.`);
   console.log('=================================================');

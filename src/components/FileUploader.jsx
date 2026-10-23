@@ -12,6 +12,7 @@ import { formatBytes } from '../utils/formatters.js';
 export default function FileUploader({ onDataLoaded, isCompact = false }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [parseProgress, setParseProgress] = useState({ percent: 0, rowsLoaded: 0 });
   const [selectedFileMeta, setSelectedFileMeta] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [delimiter, setDelimiter] = useState('');
@@ -23,12 +24,14 @@ export default function FileUploader({ onDataLoaded, isCompact = false }) {
       name: file.name,
       size: file.size,
     });
+    setParseProgress({ percent: 0, rowsLoaded: 0 });
     setIsProcessing(true);
     setErrorMessage(null);
 
     try {
       const parsedResult = await parseDelimitedData(file, {
         delimiter: customDelimiter,
+        onProgress: (p) => setParseProgress(p),
       });
       onDataLoaded(parsedResult);
     } catch (err) {
@@ -70,12 +73,14 @@ export default function FileUploader({ onDataLoaded, isCompact = false }) {
       name: `${sample.id}.csv`,
       size: sample.csv.length,
     });
+    setParseProgress({ percent: 0, rowsLoaded: 0 });
     setIsProcessing(true);
     setErrorMessage(null);
 
     try {
       const parsedResult = await parseDelimitedData(sample.csv, {
         fileName: `${sample.id}.csv`,
+        onProgress: (p) => setParseProgress(p),
       });
       onDataLoaded(parsedResult);
     } catch (err) {
@@ -108,9 +113,23 @@ export default function FileUploader({ onDataLoaded, isCompact = false }) {
           }`}
         >
           {isProcessing ? (
-            <div className="flex items-center gap-2 text-xs font-medium text-[#20242C]">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#B98220]" />
-              <span>Parsing dataset in browser...</span>
+            <div className="flex flex-col items-center gap-1.5 py-1">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#20242C]">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-[#B98220]" />
+                <span>
+                  {parseProgress.rowsLoaded > 0
+                    ? `Parsing ${parseProgress.rowsLoaded.toLocaleString()} rows (${parseProgress.percent}%)...`
+                    : 'Parsing dataset in browser...'}
+                </span>
+              </div>
+              {parseProgress.percent > 0 && (
+                <div className="h-1 w-44 overflow-hidden rounded-full bg-[#E3E6EB]">
+                  <div
+                    className="h-full rounded-full bg-[#B98220] transition-all duration-150"
+                    style={{ width: `${Math.max(5, parseProgress.percent)}%` }}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-2 text-xs text-[#667085]">
@@ -154,14 +173,26 @@ export default function FileUploader({ onDataLoaded, isCompact = false }) {
         />
 
         {isProcessing ? (
-          <div className="flex flex-col items-center justify-center space-y-2 py-3">
+          <div className="flex flex-col items-center justify-center space-y-2.5 py-3">
             <Loader2 className="h-5 w-5 animate-spin text-[#B98220]" />
             <p className="text-sm font-medium text-[#20242C]">
               Parsing {selectedFileMeta?.name || 'dataset'}...
             </p>
             <p className="text-xs text-[#89919F]">
-              Evaluating data types, missing rates, and distributions in memory.
+              {parseProgress.rowsLoaded > 0
+                ? `${parseProgress.rowsLoaded.toLocaleString()} rows loaded (${parseProgress.percent}% of file)`
+                : 'Evaluating data types, missing rates, and distributions in memory.'}
             </p>
+
+            {/* Live Progress Bar for Large Datasets */}
+            {parseProgress.percent > 0 && (
+              <div className="h-1.5 w-56 overflow-hidden rounded-full bg-[#F1F3F5] mt-1">
+                <div
+                  className="h-full rounded-full bg-[#B98220] transition-all duration-150"
+                  style={{ width: `${Math.max(5, parseProgress.percent)}%` }}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center space-y-2.5">
@@ -177,7 +208,7 @@ export default function FileUploader({ onDataLoaded, isCompact = false }) {
                 </span>
               </p>
               <p className="text-xs text-[#89919F]">
-                Supports CSV, TSV, or delimited TXT up to 15 MB (maximum 100,000 rows).
+                Supports CSV, TSV, or delimited TXT up to 250 MB (maximum 1,500,000 rows).
               </p>
             </div>
 
@@ -213,7 +244,11 @@ export default function FileUploader({ onDataLoaded, isCompact = false }) {
               ({formatBytes(selectedFileMeta.size)})
             </span>
           </div>
-          <span className="text-[11px] font-mono text-[#B98220]">Validating...</span>
+          <span className="text-[11px] font-mono text-[#B98220]">
+            {parseProgress.rowsLoaded > 0
+              ? `${parseProgress.rowsLoaded.toLocaleString()} rows`
+              : 'Streaming chunks...'}
+          </span>
         </div>
       )}
 
