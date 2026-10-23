@@ -69,12 +69,22 @@ export function matchesFilterCondition(rowValue, operator, filterVal1, filterVal
       if (isNumeric(strVal) && isNumeric(query1)) {
         return Number(strVal) > Number(query1);
       }
+      const dateVal = Date.parse(strVal);
+      const dateQ1 = Date.parse(query1);
+      if (!isNaN(dateVal) && !isNaN(dateQ1)) {
+        return dateVal > dateQ1;
+      }
       return strVal.localeCompare(query1) > 0;
     }
 
     case 'greater_equal': {
       if (isNumeric(strVal) && isNumeric(query1)) {
         return Number(strVal) >= Number(query1);
+      }
+      const dateVal = Date.parse(strVal);
+      const dateQ1 = Date.parse(query1);
+      if (!isNaN(dateVal) && !isNaN(dateQ1)) {
+        return dateVal >= dateQ1;
       }
       return strVal.localeCompare(query1) >= 0;
     }
@@ -83,12 +93,22 @@ export function matchesFilterCondition(rowValue, operator, filterVal1, filterVal
       if (isNumeric(strVal) && isNumeric(query1)) {
         return Number(strVal) < Number(query1);
       }
+      const dateVal = Date.parse(strVal);
+      const dateQ1 = Date.parse(query1);
+      if (!isNaN(dateVal) && !isNaN(dateQ1)) {
+        return dateVal < dateQ1;
+      }
       return strVal.localeCompare(query1) < 0;
     }
 
     case 'less_equal': {
       if (isNumeric(strVal) && isNumeric(query1)) {
         return Number(strVal) <= Number(query1);
+      }
+      const dateVal = Date.parse(strVal);
+      const dateQ1 = Date.parse(query1);
+      if (!isNaN(dateVal) && !isNaN(dateQ1)) {
+        return dateVal <= dateQ1;
       }
       return strVal.localeCompare(query1) <= 0;
     }
@@ -99,6 +119,14 @@ export function matchesFilterCondition(rowValue, operator, filterVal1, filterVal
         const low = Math.min(Number(query1), Number(query2));
         const high = Math.max(Number(query1), Number(query2));
         return val >= low && val <= high;
+      }
+      const dateVal = Date.parse(strVal);
+      const dateQ1 = Date.parse(query1);
+      const dateQ2 = Date.parse(query2);
+      if (!isNaN(dateVal) && !isNaN(dateQ1) && !isNaN(dateQ2)) {
+        const low = Math.min(dateQ1, dateQ2);
+        const high = Math.max(dateQ1, dateQ2);
+        return dateVal >= low && dateVal <= high;
       }
       return strVal >= query1 && strVal <= query2;
     }
@@ -122,6 +150,7 @@ export function filterDataset(data = [], columns = [], searchQuery = '', filters
   const activeFilters = (filters || []).filter(
     (f) =>
       f.column &&
+      columns.includes(f.column) &&
       f.operator &&
       (f.operator === 'is_empty' ||
         f.operator === 'is_not_empty' ||

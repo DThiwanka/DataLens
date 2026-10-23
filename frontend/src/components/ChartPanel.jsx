@@ -64,6 +64,8 @@ function ChartTooltip({ active, payload, label, currentColors, aggregation, yAxi
 
 export default function ChartPanel({
   data = [],
+  filteredData = null,
+  isFiltered = false,
   columns = [],
   columnProfiles = [],
   initialCategoryCol = null,
@@ -85,31 +87,42 @@ export default function ChartPanel({
   });
   const [yAxisCol, setYAxisCol] = useState(() => {
     if (initialMeasureCol && columns.includes(initialMeasureCol)) return initialMeasureCol;
-    return numericColumns[0] || columns[1] || '';
+    return numericColumns[0] || columns[1] || columns[0] || '';
   });
   const [aggregation, setAggregation] = useState('sum');
   const [topLimit, setTopLimit] = useState(15);
   const [colorTheme, setColorTheme] = useState('amber');
   const [showGrid, setShowGrid] = useState(true);
   const [showLegend, setShowLegend] = useState(true);
+  const [applyFilters, setApplyFilters] = useState(isFiltered);
+
+  // Sync state if columns change or drop
+  const effectiveXCol = columns.includes(xAxisCol) ? xAxisCol : (categoricalColumns[0] || columns[0] || '');
+  const effectiveYCol = columns.includes(yAxisCol) ? yAxisCol : (numericColumns[0] || columns[1] || columns[0] || '');
+
+  // Determine working dataset based on filter preference
+  const workingData = applyFilters && filteredData && filteredData.length > 0 ? filteredData : data;
 
   // Compute aggregated chart data
   const chartData = useMemo(() => {
-    if (!data || data.length === 0 || !xAxisCol) return [];
+    if (!workingData || workingData.length === 0 || !effectiveXCol) return [];
 
     const groupMap = new Map();
 
-    data.forEach((row) => {
-      const rawX = row[xAxisCol];
+    workingData.forEach((row) => {
+      const rawX = row[effectiveXCol];
       const categoryKey = isNullOrEmpty(rawX) ? '(empty)' : String(rawX).trim();
 
+      let hasValidMeasure = false;
       let measureVal = 0;
+
       if (aggregation !== 'count') {
-        const rawY = row[yAxisCol];
+        const rawY = row[effectiveYCol];
         if (!isNullOrEmpty(rawY)) {
           const cleanY = String(rawY).replace(/[$,\s%]/g, '');
           if (isNumeric(cleanY)) {
             measureVal = Number(cleanY);
+            hasValidMeasure = true;
           }
         }
       }
@@ -117,19 +130,21 @@ export default function ChartPanel({
       if (!groupMap.has(categoryKey)) {
         groupMap.set(categoryKey, {
           category: categoryKey,
-          count: 1,
-          sum: measureVal,
-          min: measureVal,
-          max: measureVal,
-          values: [measureVal],
+          rowCount: 1,
+          validCount: hasValidMeasure ? 1 : 0,
+          sum: hasValidMeasure ? measureVal : 0,
+          min: hasValidMeasure ? measureVal : null,
+          max: hasValidMeasure ? measureVal : null,
         });
       } else {
         const entry = groupMap.get(categoryKey);
-        entry.count += 1;
-        entry.sum += measureVal;
-        entry.min = Math.min(entry.min, measureVal);
-        entry.max = Math.max(entry.max, measureVal);
-        entry.values.push(measureVal);
+        entry.rowCount += 1;
+        if (hasValidMeasure) {
+          entry.validCount += 1;
+          entry.sum += measureVal;
+          entry.min = entry.min === null ? measureVal : Math.min(entry.min, measureVal);
+          entry.max = entry.max === null ? measureVal : Math.max(entry.max, measureVal);
+        }
       }
     });
 
@@ -137,16 +152,16 @@ export default function ChartPanel({
       let finalVal;
       switch (aggregation) {
         case 'count':
-          finalVal = item.count;
+          finalVal = item.rowCount;
           break;
         case 'avg':
-          finalVal = item.count > 0 ? item.sum / item.count : 0;
+          finalVal = item.validCount > 0 ? item.sum / item.validCount : 0;
           break;
         case 'min':
-          finalVal = item.min;
+          finalVal = item.min !== null ? item.min : 0;
           break;
         case 'max':
-          finalVal = item.max;
+          finalVal = item.max !== null ? item.max : 0;
           break;
         case 'sum':
         default:
@@ -157,7 +172,7 @@ export default function ChartPanel({
       return {
         category: item.category,
         value: Number(finalVal.toFixed(2)),
-        count: item.count,
+        count: item.rowCount,
       };
     });
 
@@ -179,7 +194,7 @@ export default function ChartPanel({
     }
 
     return results;
-  }, [data, xAxisCol, yAxisCol, aggregation, topLimit]);
+  }, [workingData, effectiveXCol, effectiveYCol, aggregation, topLimit]);
 
   const handleExportChartData = () => {
     if (chartData.length === 0) return;
@@ -197,8 +212,8 @@ export default function ChartPanel({
       {...props}
       currentColors={currentColors}
       aggregation={aggregation}
-      yAxisCol={yAxisCol}
-      xAxisCol={xAxisCol}
+      yAxisCol={effectiveYCol}
+      xAxisCol={effectiveXCol}
     />
   );
 
@@ -244,7 +259,7 @@ export default function ChartPanel({
               Category (X-axis)
             </label>
             <select
-              value={xAxisCol}
+              value={effectiveXCol}
               onChange={(e) => setXAxisCol(e.target.value)}
               className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-amber-600 focus:outline-none"
             >
@@ -262,7 +277,7 @@ export default function ChartPanel({
               Metric (Y-axis)
             </label>
             <select
-              value={yAxisCol}
+              value={effectiveYCol}
               onChange={(e) => setYAxisCol(e.target.value)}
               disabled={aggregation === 'count'}
               className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-amber-600 focus:outline-none disabled:opacity-40"
@@ -362,6 +377,18 @@ export default function ChartPanel({
               />
               <span>Legend</span>
             </label>
+
+            {isFiltered && (
+              <label className="flex items-center gap-1.5 cursor-pointer text-[#C58A16] font-medium">
+                <input
+                  type="checkbox"
+                  checked={applyFilters}
+                  onChange={(e) => setApplyFilters(e.target.checked)}
+                  className="rounded border-gray-300 text-amber-600 focus:ring-0"
+                />
+                <span>Apply active filters ({workingData.length.toLocaleString()} rows)</span>
+              </label>
+            )}
           </div>
 
           <button

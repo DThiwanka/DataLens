@@ -7,6 +7,10 @@ export default function DataExplorer({
   columnProfiles = [],
   fileName = 'dataset.csv',
   onNotification,
+  searchQuery,
+  onSearchChange,
+  filters,
+  onFiltersChange,
 }) {
   const handleExportFiltered = (filteredRows, visibleCols) => {
     try {
@@ -45,6 +49,10 @@ export default function DataExplorer({
         columns={columns}
         columnProfiles={columnProfiles}
         onExportFiltered={handleExportFiltered}
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        filters={filters}
+        onFiltersChange={onFiltersChange}
       />
     </div>
   );

@@ -122,27 +122,21 @@ export function parseDelimitedData(input, options = {}) {
           const data = [];
           for (let r = 0; r < rawDataRows.length; r++) {
             const rowArr = rawDataRows[r];
-            // If row has some content
-            const rowObj = {};
-            let hasAtLeastOneValue = false;
+            if (!Array.isArray(rowArr)) continue;
 
+            const rowObj = {};
             for (let c = 0; c < columns.length; c++) {
               const colName = columns[c];
-              const cellVal = rowArr[c] !== undefined && rowArr[c] !== null ? String(rowArr[c]).trim() : '';
+              // Preserve raw string representation without premature loss of leading spaces or formatting
+              const cellVal = rowArr[c] !== undefined && rowArr[c] !== null ? String(rowArr[c]) : '';
               rowObj[colName] = cellVal;
-              if (cellVal !== '') {
-                hasAtLeastOneValue = true;
-              }
             }
 
-            // Only include row if it has at least one cell with content
-            if (hasAtLeastOneValue) {
-              data.push(rowObj);
-            }
+            data.push(rowObj);
           }
 
           if (data.length === 0) {
-            return reject(new Error('Dataset contains only empty rows below the header.'));
+            return reject(new Error('Dataset contains no data rows below the header.'));
           }
 
           resolve({

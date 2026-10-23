@@ -45,15 +45,20 @@ export function exportToCsv(data = [], columns = [], filename = 'datalens-export
 
   // Prepend UTF-8 BOM (\uFEFF) so Microsoft Excel, Numbers, and Google Sheets
   // properly render international UTF-8 characters and accented text
+  const cleanFilename = filename.endsWith('.csv') ? filename : `${filename}.csv`;
+  const sanitizedFilename = cleanFilename.replace(/[<>:"/\\|?*]/g, '_');
+
+  if (typeof document === 'undefined') {
+    return { success: true, csvString, filename: sanitizedFilename };
+  }
+
   const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-
-  const cleanFilename = filename.endsWith('.csv') ? filename : `${filename}.csv`;
 
   // Create temporary invisible anchor to trigger browser download
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', cleanFilename);
+  link.setAttribute('download', sanitizedFilename);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();

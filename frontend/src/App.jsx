@@ -7,6 +7,7 @@ import DataExplorer from './pages/DataExplorer';
 import CleanStudioPage from './pages/CleanStudioPage';
 import ChartPanel from './components/ChartPanel';
 import { generateDatasetProfile } from './services/dataProfiler.js';
+import { filterDataset } from './services/dataFilters.js';
 import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 export default function App() {
@@ -16,6 +17,10 @@ export default function App() {
   // Dataset State
   const [dataset, setDataset] = useState(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  // Persistent Explorer Filter & Search State across Tab Navigations
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState([]);
 
   // Dedicated cleaning workspace state
   const [cleaningState, setCleaningState] = useState({
@@ -62,6 +67,8 @@ export default function App() {
       cleanedColumns: columns,
       history: [],
     });
+    setSearchQuery('');
+    setFilters([]);
     setIsUploadModalOpen(false);
     setActiveTab('dashboard');
 
@@ -80,6 +87,14 @@ export default function App() {
       dataset.metadata
     );
   }, [dataset]);
+
+  // Compute filtered dataset across the app
+  const filteredData = useMemo(() => {
+    if (!dataset) return [];
+    return filterDataset(dataset.activeData, dataset.activeColumns, searchQuery, filters);
+  }, [dataset, searchQuery, filters]);
+
+  const isFiltered = Boolean(searchQuery.trim() || filters.length > 0);
 
   // Handle Clean Studio Transformation
   const handleApplyTransformation = useCallback((transformResult) => {
@@ -211,6 +226,10 @@ export default function App() {
                 columnProfiles={profile?.columnProfiles || []}
                 fileName={dataset.metadata.fileName}
                 onNotification={(notif) => showToast(notif.message, notif.type)}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                filters={filters}
+                onFiltersChange={setFilters}
               />
             )}
 
@@ -224,6 +243,8 @@ export default function App() {
                 </div>
                 <ChartPanel
                   data={dataset.activeData}
+                  filteredData={filteredData}
+                  isFiltered={isFiltered}
                   columns={dataset.activeColumns}
                   columnProfiles={profile?.columnProfiles || []}
                   initialCategoryCol={chartSelection.categoryCol}

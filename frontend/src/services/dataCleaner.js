@@ -48,7 +48,8 @@ export function removeDuplicateRows(data, columns, subsetCols = null) {
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
-    const key = targetCols.map((c) => String(row[c] ?? '')).join('||~||');
+    // Deterministic row signature preventing separator collision
+    const key = JSON.stringify(targetCols.map((c) => row[c] ?? ''));
     if (!seen.has(key)) {
       seen.add(key);
       cleanedData.push({ ...row });
@@ -143,6 +144,17 @@ export function dropColumns(data, columns, columnsToDrop = []) {
     return { data, columns, action: 'Drop Columns', description: 'No columns selected to drop.', affectedRows: 0, affectedCols: 0 };
   }
 
+  if (columnsToDrop.length >= columns.length) {
+    return {
+      data,
+      columns,
+      action: 'Drop Columns',
+      description: 'Cannot drop all columns. At least one column must remain in the dataset.',
+      affectedRows: 0,
+      affectedCols: 0,
+    };
+  }
+
   const remainingColumns = columns.filter((c) => !columnsToDrop.includes(c));
   const cleanedData = data.map((row) => {
     const newRow = { ...row };
@@ -190,8 +202,9 @@ export function renameColumn(data, columns, oldName, newName) {
 
   // Ensure unique new name
   let finalNewName = trimmedNew;
-  if (columns.includes(finalNewName) && finalNewName !== oldName) {
-    finalNewName = `${finalNewName}_renamed`;
+  let count = 2;
+  while (columns.includes(finalNewName) && finalNewName !== oldName) {
+    finalNewName = `${trimmedNew}_${count++}`;
   }
 
   const updatedColumns = columns.map((c) => (c === oldName ? finalNewName : c));
@@ -305,7 +318,7 @@ export function findAndReplace(data, columns, { column = 'all', findValue, repla
     colsToProcess.forEach((col) => {
       const cellVal = String(newRow[col] ?? '');
       if (matchType === 'exact') {
-        if (cellVal === searchStr) {
+        if (cellVal.trim().toLowerCase() === searchStr.trim().toLowerCase()) {
           newRow[col] = repStr;
           replacedCount++;
         }
@@ -455,10 +468,22 @@ export function normalizeNumericStrings(data, columns, { column }) {
           convertedCount++;
         }
       } else {
+        // Handle negative accounting format ($1,200) or -$1,200
+        let isNegative = false;
+        let workStr = strVal;
+        if (workStr.startsWith('(') && workStr.endsWith(')')) {
+          isNegative = true;
+          workStr = workStr.slice(1, -1).trim();
+        } else if (workStr.startsWith('-')) {
+          isNegative = true;
+          workStr = workStr.slice(1).trim();
+        }
+
         // Strip currency symbols and commas
-        const stripped = strVal.replace(/[$,\s€£¥]/g, '');
+        const stripped = workStr.replace(/[$,\s€£¥]/g, '');
         if (isNumeric(stripped)) {
-          normalized = String(Number(stripped));
+          const num = (isNegative ? -1 : 1) * Number(stripped);
+          normalized = String(num);
           if (normalized !== strVal) convertedCount++;
         }
       }

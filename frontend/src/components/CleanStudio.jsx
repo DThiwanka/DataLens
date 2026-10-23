@@ -64,6 +64,13 @@ export default function CleanStudio({
 
   const [colsToDrop, setColsToDrop] = useState([]);
 
+  // Derived fallback values ensuring dropdowns stay in sync without cascading renders
+  const effectiveFillCol = cleanedColumns.includes(fillCol) ? fillCol : (cleanedColumns[0] || '');
+  const effectiveRenameCol = cleanedColumns.includes(renameOldCol) ? renameOldCol : (cleanedColumns[0] || '');
+  const effectiveNumericCol = cleanedColumns.includes(numericCol) ? numericCol : (cleanedColumns[0] || '');
+  const effectiveFindCol = findCol === 'all' || cleanedColumns.includes(findCol) ? findCol : 'all';
+  const effectiveCaseCol = caseCol === 'all' || cleanedColumns.includes(caseCol) ? caseCol : 'all';
+
   // Stats comparison
   const rowsDiff = cleanedData.length - originalData.length;
   const colsDiff = cleanedColumns.length - originalColumns.length;
@@ -80,9 +87,21 @@ export default function CleanStudio({
 
   const executeDropColumns = () => {
     if (colsToDrop.length === 0) return;
+    if (colsToDrop.length >= cleanedColumns.length) {
+      alert('Cannot drop all columns. At least one column must remain in the dataset.');
+      return;
+    }
     const res = dropColumns(cleanedData, cleanedColumns, colsToDrop);
     handleApply(res);
     setColsToDrop([]);
+  };
+
+  const handleResetClick = () => {
+    if (history.length > 0) {
+      if (window.confirm('Reset all cleaning transformations and restore the original dataset?')) {
+        onResetToOriginal();
+      }
+    }
   };
 
   const executeMoveColumn = (col, direction) => {
@@ -127,7 +146,7 @@ export default function CleanStudio({
             </button>
 
             <button
-              onClick={onResetToOriginal}
+              onClick={handleResetClick}
               disabled={history.length === 0}
               className="inline-flex items-center gap-1 rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
               title="Reset all changes"
@@ -309,7 +328,7 @@ export default function CleanStudio({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <select
-                value={renameOldCol}
+                value={effectiveRenameCol}
                 onChange={(e) => setRenameOldCol(e.target.value)}
                 className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
               >
@@ -329,8 +348,8 @@ export default function CleanStudio({
             </div>
             <button
               onClick={() => {
-                if (renameOldCol && renameNewCol) {
-                  handleApply(renameColumn(cleanedData, cleanedColumns, renameOldCol, renameNewCol));
+                if (effectiveRenameCol && renameNewCol) {
+                  handleApply(renameColumn(cleanedData, cleanedColumns, effectiveRenameCol, renameNewCol));
                   setRenameNewCol('');
                 }
               }}
@@ -420,7 +439,7 @@ export default function CleanStudio({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <select
-                value={findCol}
+                value={effectiveFindCol}
                 onChange={(e) => setFindCol(e.target.value)}
                 className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
               >
@@ -463,7 +482,7 @@ export default function CleanStudio({
                 if (findValue !== '') {
                   handleApply(
                     findAndReplace(cleanedData, cleanedColumns, {
-                      column: findCol,
+                      column: effectiveFindCol,
                       findValue,
                       replaceValue,
                       matchType,
@@ -486,7 +505,7 @@ export default function CleanStudio({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <select
-                value={fillCol}
+                value={effectiveFillCol}
                 onChange={(e) => setFillCol(e.target.value)}
                 className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
               >
@@ -523,7 +542,7 @@ export default function CleanStudio({
               onClick={() => {
                 handleApply(
                   fillMissingValues(cleanedData, cleanedColumns, {
-                    column: fillCol,
+                    column: effectiveFillCol,
                     strategy: fillStrategy,
                     customValue: customFillValue,
                   })
@@ -565,7 +584,7 @@ export default function CleanStudio({
             </div>
             <div className="space-y-1.5">
               <select
-                value={caseCol}
+                value={effectiveCaseCol}
                 onChange={(e) => setCaseCol(e.target.value)}
                 className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
               >
@@ -590,7 +609,7 @@ export default function CleanStudio({
               onClick={() =>
                 handleApply(
                   changeTextCase(cleanedData, cleanedColumns, {
-                    column: caseCol,
+                    column: effectiveCaseCol,
                     casing: caseType,
                   })
                 )
@@ -611,7 +630,7 @@ export default function CleanStudio({
               Strip currency symbols ($, €, £), commas, and percent signs from numeric text.
             </p>
             <select
-              value={numericCol}
+              value={effectiveNumericCol}
               onChange={(e) => setNumericCol(e.target.value)}
               className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
             >
@@ -625,7 +644,7 @@ export default function CleanStudio({
               onClick={() =>
                 handleApply(
                   normalizeNumericStrings(cleanedData, cleanedColumns, {
-                    column: numericCol,
+                    column: effectiveNumericCol,
                   })
                 )
               }

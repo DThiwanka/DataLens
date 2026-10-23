@@ -176,7 +176,7 @@ export default function FileUploader({ onDataLoaded, isCompact = false }) {
               >
                 <option value="">Auto-detect</option>
                 <option value=",">Comma (,)</option>
-                <option value="&#9;">Tab (\t)</option>
+                <option value={"\t"}>Tab (\t)</option>
                 <option value=";">Semicolon (;)</option>
                 <option value="|">Pipe (|)</option>
               </select>

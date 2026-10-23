@@ -36,12 +36,12 @@ export function countDuplicateRows(data, columns) {
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
-    // Create serialized key of row values
-    const key = columns.map((col) => String(row[col] ?? '')).join('||~||');
-    if (seen.has(key)) {
-      duplicates++;
-    } else {
+    // Create deterministic key of row values matching dataCleaner
+    const key = JSON.stringify(columns.map((col) => row[col] ?? ''));
+    if (!seen.has(key)) {
       seen.add(key);
+    } else {
+      duplicates++;
     }
   }
 
@@ -195,10 +195,18 @@ export function generateDatasetProfile(data = [], columns = [], metadata = {}) {
     let dateStats = null;
     if (inferredType === 'date' && dateValues.length > 0) {
       dateValues.sort((a, b) => a - b);
-      const earliest = new Date(dateValues[0]).toISOString().split('T')[0];
-      const latest = new Date(dateValues[dateValues.length - 1]).toISOString().split('T')[0];
-      const spanDays = Math.round(
-        (dateValues[dateValues.length - 1] - dateValues[0]) / (1000 * 60 * 60 * 24)
+      let earliest;
+      let latest;
+      try {
+        earliest = new Date(dateValues[0]).toISOString().split('T')[0];
+        latest = new Date(dateValues[dateValues.length - 1]).toISOString().split('T')[0];
+      } catch {
+        earliest = String(new Date(dateValues[0]).toLocaleDateString());
+        latest = String(new Date(dateValues[dateValues.length - 1]).toLocaleDateString());
+      }
+      const spanDays = Math.max(
+        0,
+        Math.round((dateValues[dateValues.length - 1] - dateValues[0]) / (1000 * 60 * 60 * 24))
       );
 
       dateStats = {

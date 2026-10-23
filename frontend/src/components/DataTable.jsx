@@ -25,10 +25,21 @@ export default function DataTable({
   columns = [],
   _columnProfiles = [],
   onExportFiltered,
+  searchQuery: externalSearch,
+  onSearchChange: setExternalSearch,
+  filters: externalFilters,
+  onFiltersChange: setExternalFilters,
 }) {
-  // Search & Filter State
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState([]);
+  // Search & Filter State (Controlled or Uncontrolled)
+  const [internalSearch, setInternalSearch] = useState('');
+  const [internalFilters, setInternalFilters] = useState([]);
+
+  const searchQuery = externalSearch !== undefined ? externalSearch : internalSearch;
+  const setSearchQuery = setExternalSearch || setInternalSearch;
+
+  const filters = externalFilters !== undefined ? externalFilters : internalFilters;
+  const setFilters = setExternalFilters || setInternalFilters;
+
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const [showColumnDrawer, setShowColumnDrawer] = useState(false);
 
