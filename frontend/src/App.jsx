@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import EmptyState from './components/EmptyState';
 import FileUploader from './components/FileUploader';
@@ -8,11 +9,13 @@ import CleanStudioPage from './pages/CleanStudioPage';
 import ChartPanel from './components/ChartPanel';
 import { generateDatasetProfile } from './services/dataProfiler.js';
 import { filterDataset } from './services/dataFilters.js';
+import { exportToCsv } from './services/csvExporter.js';
 import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 export default function App() {
   // Navigation State: 'dashboard' | 'explorer' | 'charts' | 'cleaning'
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Dataset State
   const [dataset, setDataset] = useState(null);
@@ -160,7 +163,7 @@ export default function App() {
     });
 
     showToast(
-      `Applied ${cleaningState.cleanedData.length.toLocaleString()} cleaned rows to active explorer.`,
+      `Applied ${cleaningState.cleanedData.length.toLocaleString()} cleaned rows to active dataset.`,
       'success'
     );
     setActiveTab('explorer');
@@ -175,116 +178,145 @@ export default function App() {
     setActiveTab('charts');
   }, []);
 
+  const handleExportActiveDataset = useCallback(() => {
+    if (!dataset) return;
+    exportToCsv(dataset.activeData, dataset.activeColumns, 'datalens-analysis-dataset.csv');
+  }, [dataset]);
+
   return (
-    <div className="min-h-screen bg-[#F7F8FA] text-[#20242C] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F7F8FA] text-[#20242C] flex font-sans antialiased">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3.5 py-2.5 text-xs shadow-lg">
+        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-3.5 py-2.5 text-xs shadow-md">
           {toast.type === 'success' && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />}
           {toast.type === 'error' && <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />}
-          {toast.type === 'info' && <Info className="h-4 w-4 text-blue-600 shrink-0" />}
-          <span className="text-gray-800 font-medium">{toast.message}</span>
+          {toast.type === 'info' && <Info className="h-4 w-4 text-[#B98220] shrink-0" />}
+          <span className="text-[#20242C] font-medium">{toast.message}</span>
           <button
             onClick={() => setToast(null)}
-            className="ml-2 text-gray-400 hover:text-gray-700"
+            className="ml-2 text-[#89919F] hover:text-[#20242C]"
+            aria-label="Dismiss toast"
           >
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
 
-      {/* Main Top Navigation */}
-      <Topbar
+      {/* Persistent Left Sidebar */}
+      <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        datasetInfo={dataset?.metadata}
+        dataset={dataset}
         onOpenNewDatasetModal={() => setIsUploadModalOpen(true)}
-        cleanedData={cleaningState.cleanedData}
-        originalData={dataset?.originalData || []}
-        activeData={dataset?.activeData || []}
-        columns={dataset?.activeColumns || []}
+        onExportClick={dataset ? handleExportActiveDataset : null}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-5 sm:px-6">
-        {!dataset ? (
-          <EmptyState onDataLoaded={handleDataLoaded} />
-        ) : (
-          <div>
-            {activeTab === 'dashboard' && (
-              <Dashboard
-                profile={profile}
-                onNavigateToTab={setActiveTab}
-                onSelectColumnForChart={handleSelectColumnForChart}
-              />
-            )}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+        {/* Top Navigation Bar */}
+        <Topbar
+          activeTab={activeTab}
+          datasetInfo={dataset?.metadata}
+          onOpenNewDatasetModal={() => setIsUploadModalOpen(true)}
+          onOpenSidebar={() => setIsSidebarOpen(true)}
+          cleanedData={cleaningState.cleanedData}
+          originalData={dataset?.originalData || []}
+          activeData={dataset?.activeData || []}
+          columns={dataset?.activeColumns || []}
+        />
 
-            {activeTab === 'explorer' && (
-              <DataExplorer
-                data={dataset.activeData}
-                columns={dataset.activeColumns}
-                columnProfiles={profile?.columnProfiles || []}
-                fileName={dataset.metadata.fileName}
-                onNotification={(notif) => showToast(notif.message, notif.type)}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                filters={filters}
-                onFiltersChange={setFilters}
-              />
-            )}
+        {/* Viewport Canvas */}
+        <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 py-5 sm:px-6 lg:px-8">
+          {!dataset ? (
+            <EmptyState onDataLoaded={handleDataLoaded} />
+          ) : (
+            <div>
+              {activeTab === 'dashboard' && (
+                <Dashboard
+                  profile={profile}
+                  onNavigateToTab={setActiveTab}
+                  onSelectColumnForChart={handleSelectColumnForChart}
+                />
+              )}
 
-            {activeTab === 'charts' && (
-              <div className="space-y-4">
-                <div className="border-b border-gray-200 pb-3">
-                  <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Chart Builder</h1>
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    Visualize trends, distributions, and aggregates from the active dataset.
-                  </p>
-                </div>
-                <ChartPanel
+              {activeTab === 'explorer' && (
+                <DataExplorer
                   data={dataset.activeData}
-                  filteredData={filteredData}
-                  isFiltered={isFiltered}
                   columns={dataset.activeColumns}
                   columnProfiles={profile?.columnProfiles || []}
-                  initialCategoryCol={chartSelection.categoryCol}
-                  initialMeasureCol={chartSelection.measureCol}
+                  fileName={dataset.metadata.fileName}
+                  onNotification={(notif) => showToast(notif.message, notif.type)}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  filters={filters}
+                  onFiltersChange={setFilters}
                 />
-              </div>
-            )}
+              )}
 
-            {activeTab === 'cleaning' && (
-              <CleanStudioPage
-                originalData={dataset.originalData}
-                originalColumns={dataset.originalColumns}
-                cleanedData={cleaningState.cleanedData}
-                cleanedColumns={cleaningState.cleanedColumns}
-                history={cleaningState.history}
-                onApplyTransformation={handleApplyTransformation}
-                onUndoTransformation={handleUndoTransformation}
-                onResetToOriginal={handleResetToOriginal}
-                onCommitCleanedToActive={handleCommitCleanedToActive}
-              />
-            )}
+              {activeTab === 'charts' && (
+                <div className="space-y-4">
+                  <div className="border-b border-[#E3E6EB] pb-3">
+                    <h2 className="text-lg font-semibold text-[#20242C] tracking-tight">Chart Builder</h2>
+                    <p className="mt-0.5 text-xs text-[#667085]">
+                      {dataset.metadata?.fileName} · {dataset.activeData.length.toLocaleString()} rows · in-memory aggregation
+                    </p>
+                  </div>
+                  <ChartPanel
+                    data={dataset.activeData}
+                    filteredData={filteredData}
+                    isFiltered={isFiltered}
+                    columns={dataset.activeColumns}
+                    columnProfiles={profile?.columnProfiles || []}
+                    initialCategoryCol={chartSelection.categoryCol}
+                    initialMeasureCol={chartSelection.measureCol}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'cleaning' && (
+                <CleanStudioPage
+                  originalData={dataset.originalData}
+                  originalColumns={dataset.originalColumns}
+                  cleanedData={cleaningState.cleanedData}
+                  cleanedColumns={cleaningState.cleanedColumns}
+                  history={cleaningState.history}
+                  onApplyTransformation={handleApplyTransformation}
+                  onUndoTransformation={handleUndoTransformation}
+                  onResetToOriginal={handleResetToOriginal}
+                  onCommitCleanedToActive={handleCommitCleanedToActive}
+                />
+              )}
+            </div>
+          )}
+        </main>
+
+        {/* Minimal SaaS Footer */}
+        <footer className="mt-auto border-t border-[#E3E6EB] bg-[#FFFFFF] py-2.5 text-xs text-[#89919F]">
+          <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 sm:px-6 lg:px-8">
+            <span className="font-medium text-[#20242C]">DataLens AI</span>
+            <span>Client-side engine · No data leaves your browser</span>
           </div>
-        )}
-      </main>
+        </footer>
+      </div>
 
       {/* Modal: Change / Upload Dataset */}
       {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="relative w-full max-w-xl rounded-lg border border-gray-200 bg-white p-5 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[1px] p-4">
+          <div className="relative w-full max-w-xl rounded border border-[#E3E6EB] bg-[#FFFFFF] p-6 shadow-xl">
             <button
               onClick={() => setIsUploadModalOpen(false)}
-              className="absolute right-3.5 top-3.5 rounded p-1 text-gray-400 hover:text-gray-700"
+              className="absolute right-4 top-4 rounded p-1 text-[#89919F] hover:text-[#20242C] transition-colors"
+              aria-label="Close modal"
             >
               <X className="h-4 w-4" />
             </button>
 
             <div className="mb-4">
-              <h2 className="text-base font-semibold text-gray-900">Upload or switch dataset</h2>
-              <p className="text-xs text-gray-500">
-                Choose a new CSV or TSV file, or select a sample dataset.
+              <h2 className="text-base font-semibold text-[#20242C]">Import or switch dataset</h2>
+              <p className="text-xs text-[#667085] mt-0.5">
+                Upload a CSV, TSV, or delimited text file, or choose from our sample datasets.
               </p>
             </div>
 
@@ -292,14 +324,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* Clean Restrained Footer */}
-      <footer className="border-t border-gray-200 bg-white py-3 text-xs text-gray-500">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6">
-          <span>DataLens • Client-side data analytics</span>
-          <span>In-memory processing</span>
-        </div>
-      </footer>
     </div>
   );
 }

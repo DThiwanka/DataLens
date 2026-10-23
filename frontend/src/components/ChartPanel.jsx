@@ -28,32 +28,32 @@ import { isNullOrEmpty, isNumeric } from '../utils/dataTypes.js';
 import { formatNumber, formatCompactNumber } from '../utils/formatters.js';
 
 const PALETTES = {
-  amber: ['#C58A16', '#D97706', '#B45309', '#92400E', '#78350F'],
+  amber: ['#B98220', '#D97706', '#986815', '#D4972C', '#78350F'],
   slate: ['#334155', '#475569', '#64748B', '#94A3B8', '#CBD5E1'],
   blue: ['#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD'],
   emerald: ['#047857', '#059669', '#10B981', '#34D399', '#6EE7B7'],
 };
 
-// Clean Light Tooltip
+// Analytical Light Tooltip
 function ChartTooltip({ active, payload, label, currentColors, aggregation, yAxisCol, xAxisCol }) {
   if (active && payload && payload.length) {
     const dataPoint = payload[0];
     return (
-      <div className="rounded border border-gray-200 bg-white p-2.5 shadow-md text-xs">
-        <p className="font-medium text-gray-900">{label || dataPoint.payload?.category}</p>
+      <div className="rounded border border-[#E3E6EB] bg-[#FFFFFF] p-2.5 shadow-md text-xs">
+        <p className="font-semibold text-[#20242C]">{label || dataPoint.payload?.category}</p>
         <div className="mt-1 flex items-center gap-1.5">
           <span
             className="h-2 w-2 rounded-full"
             style={{ backgroundColor: dataPoint.color || currentColors[0] }}
           />
-          <span className="text-gray-500 capitalize">
-            {aggregation} of {aggregation === 'count' ? 'rows' : (yAxisCol || xAxisCol)}:
+          <span className="text-[#667085] capitalize">
+            {aggregation} of {aggregation === 'count' ? 'records' : (yAxisCol || xAxisCol)}:
           </span>
-          <span className="font-semibold font-mono text-gray-900">
+          <span className="font-semibold font-mono text-[#20242C]">
             {formatNumber(dataPoint.value)}
           </span>
         </div>
-        <p className="mt-0.5 text-[10px] text-gray-400">
+        <p className="mt-0.5 text-[10px] text-[#89919F]">
           Records in group: {dataPoint.payload?.count}
         </p>
       </div>
@@ -219,15 +219,15 @@ export default function ChartPanel({
 
   return (
     <div className="space-y-4">
-      {/* Chart Configuration Controls Bar */}
-      <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-3">
+      {/* Configuration Controls Bar */}
+      <div className="rounded border border-[#E3E6EB] bg-[#FFFFFF] p-3 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
-          {/* Chart Type Selector */}
+          {/* Chart Type */}
           <div>
-            <label className="block text-[11px] font-medium text-gray-500 mb-1">
+            <label className="block text-[11px] font-medium text-[#89919F] mb-1">
               Chart type
             </label>
-            <div className="flex rounded border border-gray-300 bg-gray-50 p-0.5">
+            <div className="flex h-8 rounded border border-[#E3E6EB] bg-[#F1F3F5] p-0.5">
               {[
                 { id: 'bar', label: 'Bar', icon: BarChart3 },
                 { id: 'line', label: 'Line', icon: LineIcon },
@@ -239,10 +239,10 @@ export default function ChartPanel({
                   <button
                     key={t.id}
                     onClick={() => setChartType(t.id)}
-                    className={`flex flex-1 items-center justify-center gap-1 rounded py-1 text-xs font-medium transition-colors ${
+                    className={`flex flex-1 items-center justify-center gap-1 rounded py-0.5 text-xs font-medium transition-colors ${
                       chartType === t.id
-                        ? 'bg-white text-gray-900 shadow-xs'
-                        : 'text-gray-500 hover:text-gray-900'
+                        ? 'bg-[#FFFFFF] text-[#20242C] shadow-xs font-semibold'
+                        : 'text-[#667085] hover:text-[#20242C]'
                     }`}
                   >
                     <Icon className="h-3 w-3" />
@@ -255,13 +255,13 @@ export default function ChartPanel({
 
           {/* Dimension (X-Axis) */}
           <div>
-            <label className="block text-[11px] font-medium text-gray-500 mb-1">
-              Category (X-axis)
+            <label className="block text-[11px] font-medium text-[#89919F] mb-1">
+              Dimension (X-axis)
             </label>
             <select
               value={effectiveXCol}
               onChange={(e) => setXAxisCol(e.target.value)}
-              className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-amber-600 focus:outline-none"
+              className="h-8 w-full rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 text-xs text-[#20242C] focus:border-[#B98220] focus:outline-none"
             >
               {columns.map((col) => (
                 <option key={col} value={col}>
@@ -273,14 +273,14 @@ export default function ChartPanel({
 
           {/* Metric (Y-Axis) */}
           <div>
-            <label className="block text-[11px] font-medium text-gray-500 mb-1">
+            <label className="block text-[11px] font-medium text-[#89919F] mb-1">
               Metric (Y-axis)
             </label>
             <select
               value={effectiveYCol}
               onChange={(e) => setYAxisCol(e.target.value)}
               disabled={aggregation === 'count'}
-              className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-amber-600 focus:outline-none disabled:opacity-40"
+              className="h-8 w-full rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 text-xs text-[#20242C] focus:border-[#B98220] focus:outline-none disabled:opacity-40"
             >
               {numericColumns.length > 0 ? (
                 numericColumns.map((col) => (
@@ -300,13 +300,13 @@ export default function ChartPanel({
 
           {/* Aggregation */}
           <div>
-            <label className="block text-[11px] font-medium text-gray-500 mb-1">
+            <label className="block text-[11px] font-medium text-[#89919F] mb-1">
               Aggregation
             </label>
             <select
               value={aggregation}
               onChange={(e) => setAggregation(e.target.value)}
-              className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-amber-600 focus:outline-none"
+              className="h-8 w-full rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 text-xs text-[#20242C] focus:border-[#B98220] focus:outline-none"
             >
               <option value="sum">Sum</option>
               <option value="avg">Average</option>
@@ -318,13 +318,13 @@ export default function ChartPanel({
 
           {/* Limit Categories */}
           <div>
-            <label className="block text-[11px] font-medium text-gray-500 mb-1">
+            <label className="block text-[11px] font-medium text-[#89919F] mb-1">
               Limit categories
             </label>
             <select
               value={topLimit}
               onChange={(e) => setTopLimit(Number(e.target.value))}
-              className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-amber-600 focus:outline-none"
+              className="h-8 w-full rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 text-xs text-[#20242C] focus:border-[#B98220] focus:outline-none"
             >
               <option value={5}>Top 5</option>
               <option value={10}>Top 10</option>
@@ -335,20 +335,20 @@ export default function ChartPanel({
           </div>
         </div>
 
-        {/* Secondary Control Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-2.5 text-xs text-gray-500">
+        {/* Secondary options toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E3E6EB] pt-2 text-xs text-[#667085]">
           <div className="flex flex-wrap items-center gap-4">
             {/* Palette */}
             <div className="flex items-center gap-1.5">
-              <span>Theme:</span>
+              <span className="text-[11px] text-[#89919F]">Palette:</span>
               <div className="flex items-center gap-1">
                 {Object.keys(PALETTES).map((name) => (
                   <button
                     key={name}
                     onClick={() => setColorTheme(name)}
-                    className={`h-4 w-4 rounded-full border transition-transform ${
+                    className={`h-3.5 w-3.5 rounded-full border transition-transform ${
                       colorTheme === name
-                        ? 'border-gray-800 scale-110 shadow-xs'
+                        ? 'border-[#20242C] scale-110 shadow-xs'
                         : 'border-transparent opacity-60 hover:opacity-100'
                     }`}
                     style={{ backgroundColor: PALETTES[name][0] }}
@@ -358,35 +358,35 @@ export default function ChartPanel({
               </div>
             </div>
 
-            <label className="flex items-center gap-1.5 cursor-pointer">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs">
               <input
                 type="checkbox"
                 checked={showGrid}
                 onChange={(e) => setShowGrid(e.target.checked)}
-                className="rounded border-gray-300 text-amber-600 focus:ring-0"
+                className="rounded border-[#E3E6EB] text-[#B98220] focus:ring-0"
               />
-              <span>Grid</span>
+              <span>Gridlines</span>
             </label>
 
-            <label className="flex items-center gap-1.5 cursor-pointer">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs">
               <input
                 type="checkbox"
                 checked={showLegend}
                 onChange={(e) => setShowLegend(e.target.checked)}
-                className="rounded border-gray-300 text-amber-600 focus:ring-0"
+                className="rounded border-[#E3E6EB] text-[#B98220] focus:ring-0"
               />
               <span>Legend</span>
             </label>
 
             {isFiltered && (
-              <label className="flex items-center gap-1.5 cursor-pointer text-[#C58A16] font-medium">
+              <label className="flex items-center gap-1.5 cursor-pointer text-[#B98220] font-medium text-xs">
                 <input
                   type="checkbox"
                   checked={applyFilters}
                   onChange={(e) => setApplyFilters(e.target.checked)}
-                  className="rounded border-gray-300 text-amber-600 focus:ring-0"
+                  className="rounded border-[#E3E6EB] text-[#B98220] focus:ring-0"
                 />
-                <span>Apply active filters ({workingData.length.toLocaleString()} rows)</span>
+                <span>Apply filtered subset ({workingData.length.toLocaleString()} rows)</span>
               </label>
             )}
           </div>
@@ -394,55 +394,55 @@ export default function ChartPanel({
           <button
             onClick={handleExportChartData}
             disabled={chartData.length === 0}
-            className="inline-flex items-center gap-1.5 rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+            className="inline-flex h-7 items-center gap-1 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 text-xs font-medium text-[#20242C] hover:bg-[#F7F8FA] hover:border-[#D1D5DB] disabled:opacity-40 transition-colors"
           >
-            <Download className="h-3 w-3 text-gray-500" />
-            <span>Export CSV</span>
+            <Download className="h-3 w-3 text-[#89919F]" />
+            <span>Export aggregated CSV</span>
           </button>
         </div>
       </div>
 
-      {/* Main Chart Card */}
-      <div className="rounded-md border border-gray-200 bg-white p-4">
-        <div className="mb-3 border-b border-gray-100 pb-2">
-          <h3 className="text-sm font-semibold text-gray-900">
-            {aggregation.toUpperCase()} of {aggregation === 'count' ? 'rows' : yAxisCol} by {xAxisCol}
+      {/* Main Chart Instrument Canvas */}
+      <div className="rounded border border-[#E3E6EB] bg-[#FFFFFF] p-4">
+        <div className="mb-3 border-b border-[#E3E6EB] pb-2">
+          <h3 className="text-sm font-semibold text-[#20242C]">
+            {aggregation.toUpperCase()} of {aggregation === 'count' ? 'records' : yAxisCol} by {xAxisCol}
           </h3>
-          <p className="text-xs text-gray-500">
-            {data.length.toLocaleString()} total records • {chartData.length} distinct groups displayed
+          <p className="text-xs text-[#89919F]">
+            {data.length.toLocaleString()} records evaluated · {chartData.length} distinct groups plotted
           </p>
         </div>
 
         {chartData.length === 0 ? (
-          <div className="flex h-72 items-center justify-center text-xs text-gray-400">
+          <div className="flex h-72 items-center justify-center text-xs text-[#89919F]">
             No chartable data available for the chosen configuration.
           </div>
         ) : (
-          <div className="h-88 w-full pt-2">
+          <div className="h-84 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               {chartType === 'bar' ? (
-                <BarChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 50 }}>
-                  {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />}
+                <BarChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 45 }}>
+                  {showGrid && <CartesianGrid strokeDasharray="2 2" stroke="#F1F3F5" />}
                   <XAxis
                     dataKey="category"
-                    stroke="#64748B"
+                    stroke="#89919F"
                     fontSize={11}
                     tickLine={false}
                     interval={0}
-                    angle={-30}
+                    angle={-25}
                     textAnchor="end"
                   />
                   <YAxis
-                    stroke="#64748B"
+                    stroke="#89919F"
                     fontSize={11}
                     tickLine={false}
                     tickFormatter={formatCompactNumber}
                   />
                   <Tooltip content={renderTooltip} />
-                  {showLegend && <Legend wrapperStyle={{ paddingTop: '15px', fontSize: '11px' }} />}
+                  {showLegend && <Legend wrapperStyle={{ paddingTop: '12px', fontSize: '11px' }} />}
                   <Bar
                     dataKey="value"
-                    name={`${aggregation} of ${aggregation === 'count' ? 'rows' : yAxisCol}`}
+                    name={`${aggregation} of ${aggregation === 'count' ? 'records' : yAxisCol}`}
                     fill={currentColors[0]}
                     radius={[2, 2, 0, 0]}
                   >
@@ -455,65 +455,65 @@ export default function ChartPanel({
                   </Bar>
                 </BarChart>
               ) : chartType === 'line' ? (
-                <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 50 }}>
-                  {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />}
+                <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 45 }}>
+                  {showGrid && <CartesianGrid strokeDasharray="2 2" stroke="#F1F3F5" />}
                   <XAxis
                     dataKey="category"
-                    stroke="#64748B"
+                    stroke="#89919F"
                     fontSize={11}
                     tickLine={false}
                     interval={0}
-                    angle={-30}
+                    angle={-25}
                     textAnchor="end"
                   />
                   <YAxis
-                    stroke="#64748B"
+                    stroke="#89919F"
                     fontSize={11}
                     tickLine={false}
                     tickFormatter={formatCompactNumber}
                   />
                   <Tooltip content={renderTooltip} />
-                  {showLegend && <Legend wrapperStyle={{ paddingTop: '15px', fontSize: '11px' }} />}
+                  {showLegend && <Legend wrapperStyle={{ paddingTop: '12px', fontSize: '11px' }} />}
                   <Line
                     type="monotone"
                     dataKey="value"
-                    name={`${aggregation} of ${aggregation === 'count' ? 'rows' : yAxisCol}`}
+                    name={`${aggregation} of ${aggregation === 'count' ? 'records' : yAxisCol}`}
                     stroke={currentColors[0]}
                     strokeWidth={2}
-                    dot={{ fill: currentColors[0], r: 3 }}
-                    activeDot={{ r: 5, fill: currentColors[0] }}
+                    dot={{ fill: currentColors[0], r: 2.5 }}
+                    activeDot={{ r: 4.5, fill: currentColors[0] }}
                   />
                 </LineChart>
               ) : chartType === 'area' ? (
-                <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 50 }}>
-                  {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />}
+                <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 45 }}>
+                  {showGrid && <CartesianGrid strokeDasharray="2 2" stroke="#F1F3F5" />}
                   <XAxis
                     dataKey="category"
-                    stroke="#64748B"
+                    stroke="#89919F"
                     fontSize={11}
                     tickLine={false}
                     interval={0}
-                    angle={-30}
+                    angle={-25}
                     textAnchor="end"
                   />
                   <YAxis
-                    stroke="#64748B"
+                    stroke="#89919F"
                     fontSize={11}
                     tickLine={false}
                     tickFormatter={formatCompactNumber}
                   />
                   <Tooltip content={renderTooltip} />
-                  {showLegend && <Legend wrapperStyle={{ paddingTop: '15px', fontSize: '11px' }} />}
+                  {showLegend && <Legend wrapperStyle={{ paddingTop: '12px', fontSize: '11px' }} />}
                   <defs>
                     <linearGradient id="areaGradientLight" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={currentColors[0]} stopOpacity={0.2} />
+                      <stop offset="5%" stopColor={currentColors[0]} stopOpacity={0.18} />
                       <stop offset="95%" stopColor={currentColors[0]} stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
                   <Area
                     type="monotone"
                     dataKey="value"
-                    name={`${aggregation} of ${aggregation === 'count' ? 'rows' : yAxisCol}`}
+                    name={`${aggregation} of ${aggregation === 'count' ? 'records' : yAxisCol}`}
                     stroke={currentColors[0]}
                     strokeWidth={2}
                     fill="url(#areaGradientLight)"
@@ -529,8 +529,8 @@ export default function ChartPanel({
                     nameKey="category"
                     cx="50%"
                     cy="50%"
-                    outerRadius={105}
-                    innerRadius={50}
+                    outerRadius={100}
+                    innerRadius={48}
                     paddingAngle={2}
                   >
                     {chartData.map((_, index) => (

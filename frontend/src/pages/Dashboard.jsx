@@ -3,7 +3,6 @@ import {
   BarChart2,
   Wand2,
 } from 'lucide-react';
-import StatCard from '../components/StatCard';
 import ColumnProfile from '../components/ColumnProfile';
 import { formatNumber, formatBytes } from '../utils/formatters.js';
 
@@ -17,7 +16,6 @@ export default function Dashboard({
   const {
     rowCount,
     columnCount,
-    totalCells,
     missingCells,
     missingRate,
     duplicateRows,
@@ -28,55 +26,54 @@ export default function Dashboard({
   } = profile;
 
   const getHealthBadge = (score) => {
-    if (score >= 90) return { label: 'High quality', type: 'success' };
-    if (score >= 75) return { label: 'Good', type: 'info' };
-    if (score >= 50) return { label: 'Moderate', type: 'warning' };
-    return { label: 'Needs attention', type: 'danger' };
+    if (score >= 90) return { label: 'High quality', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
+    if (score >= 75) return { label: 'Good', color: 'text-blue-700 bg-blue-50 border-blue-200' };
+    if (score >= 50) return { label: 'Moderate', color: 'text-amber-700 bg-amber-50 border-amber-200' };
+    return { label: 'Needs attention', color: 'text-red-700 bg-red-50 border-red-200' };
   };
 
   const healthBadge = getHealthBadge(healthScore);
 
   return (
-    <div className="space-y-6">
-      {/* Top Header & Context */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
+    <div className="space-y-5">
+      {/* Workspace Header & Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E3E6EB] pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
+            <h2 className="text-lg font-semibold tracking-tight text-[#20242C]">
               {metadata?.fileName || 'Active Dataset'}
-            </h1>
-            <span className="rounded bg-gray-100 border border-gray-200 px-2 py-0.5 text-xs text-gray-600 font-mono">
-              {metadata?.fileSize ? formatBytes(metadata.fileSize) : 'In-memory'}
+            </h2>
+            <span className="rounded border border-[#E3E6EB] bg-[#F1F3F5] px-1.5 py-0.5 text-[11px] font-mono text-[#667085]">
+              {metadata?.delimiter === '\t' ? 'TSV' : 'CSV'}
             </span>
           </div>
-          <p className="mt-1 text-xs text-gray-500">
-            {rowCount.toLocaleString()} rows • {columnCount} columns • {missingCells === 0 ? 'No missing cells' : `${missingCells.toLocaleString()} missing cells (${missingRate.toFixed(1)}%)`}
-            {duplicateRows > 0 ? ` • ${duplicateRows} duplicate rows` : ''}
+          <p className="mt-0.5 text-xs text-[#667085]">
+            {metadata?.fileName || 'dataset.csv'} · {metadata?.fileSize ? formatBytes(metadata.fileSize) : 'in-memory'} · {formatNumber(rowCount, 0)} rows · {columnCount} columns
           </p>
         </div>
 
-        {/* Quick Action Navigation Buttons */}
+        {/* Action Controls */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => onNavigateToTab('explorer')}
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="inline-flex h-8 items-center gap-1.5 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-3 text-xs font-medium text-[#20242C] hover:bg-[#F7F8FA] hover:border-[#D1D5DB] transition-colors"
           >
-            <Table2 className="h-3.5 w-3.5 text-gray-500" />
+            <Table2 className="h-3.5 w-3.5 text-[#667085]" />
             <span>Explore data</span>
           </button>
 
           <button
             onClick={() => onNavigateToTab('charts')}
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="inline-flex h-8 items-center gap-1.5 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-3 text-xs font-medium text-[#20242C] hover:bg-[#F7F8FA] hover:border-[#D1D5DB] transition-colors"
           >
-            <BarChart2 className="h-3.5 w-3.5 text-gray-500" />
+            <BarChart2 className="h-3.5 w-3.5 text-[#667085]" />
             <span>Create chart</span>
           </button>
 
           {(missingCells > 0 || duplicateRows > 0) && (
             <button
               onClick={() => onNavigateToTab('cleaning')}
-              className="inline-flex items-center gap-1.5 rounded-md bg-[#C58A16] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#B45309] transition-colors"
+              className="inline-flex h-8 items-center gap-1.5 rounded bg-[#B98220] px-3 text-xs font-medium text-white hover:bg-[#9D6D17] transition-colors shadow-xs"
             >
               <Wand2 className="h-3.5 w-3.5" />
               <span>Clean data</span>
@@ -85,46 +82,83 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Summary Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          title="Total Rows"
-          value={formatNumber(rowCount, 0)}
-          subtitle={`${formatNumber(totalCells, 0)} total values evaluated`}
-        />
+      {/* Inline Analytical Summary Bar (Replaces typical oversized cards) */}
+      <div className="overflow-hidden rounded border border-[#E3E6EB] bg-[#FFFFFF]">
+        <div className="grid grid-cols-2 divide-y divide-[#E3E6EB] sm:grid-cols-4 sm:divide-y-0 sm:divide-x divide-[#E3E6EB]">
+          {/* Metric 1: Rows */}
+          <div className="p-3.5">
+            <span className="text-[11px] font-medium text-[#89919F] block">Total records</span>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-xl font-semibold tracking-tight text-[#20242C] font-mono">
+                {formatNumber(rowCount, 0)}
+              </span>
+              <span className="text-xs text-[#89919F]">rows</span>
+            </div>
+            <span className="text-[11px] text-[#667085] mt-0.5 block">
+              In-browser active dataset
+            </span>
+          </div>
 
-        <StatCard
-          title="Columns by Type"
-          value={formatNumber(columnCount, 0)}
-          subtitle={`${typeDistribution.numeric} numeric, ${typeDistribution.text} text, ${typeDistribution.date || 0} date`}
-        />
+          {/* Metric 2: Columns */}
+          <div className="p-3.5">
+            <span className="text-[11px] font-medium text-[#89919F] block">Schema breakdown</span>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-xl font-semibold tracking-tight text-[#20242C] font-mono">
+                {columnCount}
+              </span>
+              <span className="text-xs text-[#89919F]">columns</span>
+            </div>
+            <span className="text-[11px] text-[#667085] mt-0.5 block">
+              {typeDistribution.numeric} numeric · {typeDistribution.text} text {typeDistribution.date ? `· ${typeDistribution.date} date` : ''}
+            </span>
+          </div>
 
-        <StatCard
-          title="Quality Score"
-          value={`${healthScore}/100`}
-          subtitle={`Completeness: ${(100 - missingRate).toFixed(1)}%`}
-          badge={healthBadge.label}
-          badgeType={healthBadge.type}
-        />
+          {/* Metric 3: Data Quality & Missing */}
+          <div className="p-3.5">
+            <span className="text-[11px] font-medium text-[#89919F] block">Completeness</span>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-xl font-semibold tracking-tight text-[#20242C] font-mono">
+                {(100 - missingRate).toFixed(1)}%
+              </span>
+              {missingCells > 0 && (
+                <span className="text-[11px] font-mono text-amber-700">
+                  ({formatNumber(missingCells, 0)} empty)
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] text-[#667085] mt-0.5 block">
+              {duplicateRows > 0 ? `${duplicateRows} duplicate rows` : '0 duplicates'}
+            </span>
+          </div>
 
-        <StatCard
-          title="Missing & Duplicates"
-          value={`${missingRate.toFixed(1)}%`}
-          subtitle={`${missingCells.toLocaleString()} empty cells • ${duplicateRows} duplicate rows`}
-          badge={duplicateRows > 0 ? `${duplicateRows} duplicates` : 'No duplicates'}
-          badgeType={duplicateRows > 0 ? 'warning' : 'default'}
-        />
+          {/* Metric 4: Health Score */}
+          <div className="p-3.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-[#89919F]">Quality index</span>
+              <span className={`inline-flex items-center rounded border px-1.5 py-0.2 text-[10px] font-medium ${healthBadge.color}`}>
+                {healthBadge.label}
+              </span>
+            </div>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-xl font-semibold tracking-tight text-[#20242C] font-mono">
+                {healthScore}
+              </span>
+              <span className="text-xs text-[#89919F]">/ 100</span>
+            </div>
+            <span className="text-[11px] text-[#667085] mt-0.5 block">
+              Calculated from active profiles
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Column Profiling Section */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900">Column Profiles & Schema</h2>
-            <p className="text-xs text-gray-500">
-              Inferred data types, missing rates, and distributions across all {columnProfiles.length} columns.
-            </p>
-          </div>
+      {/* Structured Column Schema & Quality Inspector */}
+      <div className="space-y-3 pt-1">
+        <div>
+          <h3 className="text-sm font-semibold text-[#20242C]">Column Schema & Profiling</h3>
+          <p className="text-xs text-[#89919F]">
+            Inferred types, missing rates, and value distributions across {columnProfiles.length} columns.
+          </p>
         </div>
 
         <ColumnProfile

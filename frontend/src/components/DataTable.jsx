@@ -23,14 +23,14 @@ import { exportToCsv } from '../services/csvExporter.js';
 export default function DataTable({
   data = [],
   columns = [],
-  _columnProfiles = [],
+  columnProfiles = [],
   onExportFiltered,
   searchQuery: externalSearch,
   onSearchChange: setExternalSearch,
   filters: externalFilters,
   onFiltersChange: setExternalFilters,
 }) {
-  // Search & Filter State (Controlled or Uncontrolled)
+  // Search & Filter State
   const [internalSearch, setInternalSearch] = useState('');
   const [internalFilters, setInternalFilters] = useState([]);
 
@@ -43,12 +43,21 @@ export default function DataTable({
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const [showColumnDrawer, setShowColumnDrawer] = useState(false);
 
-  // Column Visibility State: Record<columnName, boolean>
+  // Column Visibility State
   const [visibleColumns, setVisibleColumns] = useState(() => {
     const initial = {};
     columns.forEach((c) => (initial[c] = true));
     return initial;
   });
+
+  // Numeric columns set for alignment and tabular numerals
+  const numericColumnSet = useMemo(() => {
+    const set = new Set();
+    columnProfiles.forEach((p) => {
+      if (p.type === 'numeric') set.add(p.name);
+    });
+    return set;
+  }, [columnProfiles]);
 
   // Sort State: { column: null, direction: 'asc'|'desc'|null }
   const [sortState, setSortState] = useState({ column: null, direction: null });
@@ -89,7 +98,7 @@ export default function DataTable({
     });
   };
 
-  // Add new filter condition
+  // Filter operations
   const handleAddFilter = () => {
     const newFilter = {
       id: Date.now().toString(),
@@ -120,7 +129,7 @@ export default function DataTable({
     setCurrentPage(1);
   };
 
-  // Toggle single column visibility
+  // Column visibility operations
   const toggleColumnVisibility = (col) => {
     setVisibleColumns((prev) => ({
       ...prev,
@@ -142,7 +151,7 @@ export default function DataTable({
     setVisibleColumns(obj);
   };
 
-  // Export currently filtered results
+  // Export
   const handleExport = () => {
     if (onExportFiltered) {
       onExportFiltered(sortedData, activeColumns);
@@ -155,59 +164,60 @@ export default function DataTable({
 
   return (
     <div className="space-y-3">
-      {/* Action Toolbar */}
-      <div className="flex flex-col gap-2.5 rounded-md border border-gray-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Left: Global Search & Quick Actions */}
+      {/* 1. Compact Table Toolbar */}
+      <div className="flex flex-col gap-2 rounded border border-[#E3E6EB] bg-[#FFFFFF] p-2 sm:flex-row sm:items-center sm:justify-between">
+        {/* Left: Search & Filter Trigger */}
         <div className="flex flex-1 flex-wrap items-center gap-2">
-          {/* Global Search Input */}
-          <div className="relative min-w-[200px] flex-1 max-w-sm">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+          {/* Search Input */}
+          <div className="relative min-w-[220px] flex-1 max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#89919F]" />
             <input
               type="text"
-              placeholder="Search in all columns..."
+              placeholder="Search across all columns..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full rounded border border-gray-300 bg-white py-1.5 pl-8 pr-7 text-xs text-gray-900 placeholder-gray-400 focus:border-amber-600 focus:outline-none"
+              className="h-8 w-full rounded border border-[#E3E6EB] bg-[#FFFFFF] py-1 pl-8 pr-7 text-xs text-[#20242C] placeholder-[#89919F] focus:border-[#B98220] focus:outline-none"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#89919F] hover:text-[#20242C]"
+                aria-label="Clear search"
               >
                 <X className="h-3 w-3" />
               </button>
             )}
           </div>
 
-          {/* Filter Drawer Toggle */}
+          {/* Filter Toggle Button */}
           <button
             onClick={() => setShowFilterDrawer((prev) => !prev)}
-            className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+            className={`inline-flex h-8 items-center gap-1.5 rounded border px-2.5 text-xs font-medium transition-colors ${
               filters.length > 0
-                ? 'border-amber-500 bg-amber-50 text-amber-800'
-                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                ? 'border-[#B98220] bg-amber-50/40 text-[#B98220]'
+                : 'border-[#E3E6EB] bg-[#FFFFFF] text-[#20242C] hover:bg-[#F7F8FA] hover:border-[#D1D5DB]'
             }`}
           >
-            <Filter className="h-3.5 w-3.5 text-gray-500" />
+            <Filter className="h-3.5 w-3.5 text-[#89919F]" />
             <span>Filter</span>
             {filters.length > 0 && (
-              <span className="ml-1 rounded bg-amber-600 px-1 py-0.2 text-[10px] font-bold text-white">
+              <span className="ml-0.5 rounded bg-[#B98220] px-1 py-0.2 text-[10px] font-bold text-white">
                 {filters.length}
               </span>
             )}
           </button>
 
-          {/* Column Visibility Toggle */}
+          {/* Column Visibility Button */}
           <button
             onClick={() => setShowColumnDrawer((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="inline-flex h-8 items-center gap-1.5 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2.5 text-xs font-medium text-[#20242C] hover:bg-[#F7F8FA] hover:border-[#D1D5DB] transition-colors"
           >
-            <SlidersHorizontal className="h-3.5 w-3.5 text-gray-500" />
+            <SlidersHorizontal className="h-3.5 w-3.5 text-[#89919F]" />
             <span>Columns</span>
-            <span className="text-[11px] text-gray-400">
+            <span className="text-[11px] font-mono text-[#89919F]">
               ({activeColumns.length}/{columns.length})
             </span>
           </button>
@@ -216,7 +226,7 @@ export default function DataTable({
           {isFiltered && (
             <button
               onClick={handleResetFilters}
-              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900"
+              className="inline-flex items-center gap-1 px-1.5 text-xs text-[#89919F] hover:text-[#20242C] transition-colors"
             >
               <RotateCcw className="h-3 w-3" />
               <span>Reset</span>
@@ -224,149 +234,175 @@ export default function DataTable({
           )}
         </div>
 
-        {/* Right: Record Counter & Export */}
-        <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-2 sm:border-t-0 sm:pt-0">
-          <span className="text-xs text-gray-500">
-            Showing <strong className="font-semibold text-gray-800">{filteredData.length === 0 ? 0 : pagination.startIndex + 1}–{pagination.endIndex}</strong> of <strong className="font-semibold text-gray-800">{filteredData.length.toLocaleString()}</strong> rows
+        {/* Right: Quick Record Count & Export */}
+        <div className="flex items-center justify-between gap-3 pt-1 sm:pt-0">
+          <span className="text-xs text-[#667085]">
+            <span className="font-mono font-medium text-[#20242C]">{filteredData.length.toLocaleString()}</span> rows
           </span>
 
           <button
             onClick={handleExport}
             disabled={filteredData.length === 0}
-            className="inline-flex items-center gap-1.5 rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="inline-flex h-8 items-center gap-1.5 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2.5 text-xs font-medium text-[#20242C] hover:bg-[#F7F8FA] hover:border-[#D1D5DB] disabled:opacity-40 transition-colors"
           >
-            <Download className="h-3.5 w-3.5 text-gray-500" />
+            <Download className="h-3.5 w-3.5 text-[#89919F]" />
             <span>Export CSV</span>
           </button>
         </div>
       </div>
 
-      {/* Filter Builder Panel */}
+      {/* 2. Active Filter Chips Bar */}
+      {filters.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 rounded border border-[#E3E6EB] bg-[#F7F8FA] px-3 py-1.5 text-xs">
+          <span className="text-[11px] font-medium text-[#89919F] mr-1">Active filters:</span>
+          {filters.map((f) => (
+            <span
+              key={f.id}
+              className="inline-flex items-center gap-1.5 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 py-0.5 text-xs text-[#20242C]"
+            >
+              <span className="font-mono font-medium">{f.column}</span>
+              <span className="text-[#89919F]">{f.operator.replace('_', ' ')}</span>
+              {f.value && <span className="font-semibold">{f.value}</span>}
+              <button
+                onClick={() => handleRemoveFilter(f.id)}
+                className="text-[#89919F] hover:text-red-600 ml-0.5"
+                aria-label={`Remove filter on ${f.column}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          <button
+            onClick={handleResetFilters}
+            className="text-[11px] text-[#B98220] hover:underline ml-1"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
+      {/* Filter Builder Drawer */}
       {showFilterDrawer && (
-        <div className="rounded-md border border-gray-200 bg-gray-50 p-3 space-y-2.5">
+        <div className="rounded border border-[#E3E6EB] bg-[#F7F8FA] p-3 space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-700">
+            <span className="text-xs font-semibold text-[#20242C]">
               Filter conditions ({filters.length})
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleAddFilter}
-                className="inline-flex items-center gap-1 rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                className="inline-flex h-7 items-center gap-1 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 text-xs font-medium text-[#20242C] hover:bg-[#F7F8FA]"
               >
                 <Plus className="h-3 w-3" />
                 <span>Add condition</span>
               </button>
               <button
                 onClick={() => setShowFilterDrawer(false)}
-                className="rounded p-0.5 text-gray-400 hover:text-gray-700"
+                className="rounded p-0.5 text-[#89919F] hover:text-[#20242C]"
+                aria-label="Close filter panel"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          {filters.length === 0 ? (
-            <p className="text-xs text-gray-500 py-1">
-              No active conditions. Click &ldquo;Add condition&rdquo; to filter rows by specific columns.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {filters.map((filter, idx) => (
-                <div
-                  key={filter.id}
-                  className="flex flex-wrap items-center gap-2 rounded border border-gray-200 bg-white p-2 text-xs"
+          <div className="space-y-2">
+            {filters.map((filter, idx) => (
+              <div
+                key={filter.id}
+                className="flex flex-wrap items-center gap-2 rounded border border-[#E3E6EB] bg-[#FFFFFF] p-2 text-xs"
+              >
+                <span className="text-[11px] font-mono text-[#89919F] w-12">
+                  {idx === 0 ? 'Where' : 'And'}
+                </span>
+
+                {/* Column Select */}
+                <select
+                  value={filter.column}
+                  onChange={(e) => handleUpdateFilter(filter.id, 'column', e.target.value)}
+                  className="h-7 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 text-xs text-[#20242C] focus:border-[#B98220] focus:outline-none"
                 >
-                  <span className="text-[11px] font-mono text-gray-400 w-12">
-                    {idx === 0 ? 'Where' : 'And'}
-                  </span>
+                  {columns.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
 
-                  {/* Column Select */}
-                  <select
-                    value={filter.column}
-                    onChange={(e) => handleUpdateFilter(filter.id, 'column', e.target.value)}
-                    className="rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
-                  >
-                    {columns.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                {/* Operator Select */}
+                <select
+                  value={filter.operator}
+                  onChange={(e) => handleUpdateFilter(filter.id, 'operator', e.target.value)}
+                  className="h-7 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 text-xs text-[#20242C] focus:border-[#B98220] focus:outline-none"
+                >
+                  {FILTER_OPERATORS.map((op) => (
+                    <option key={op.value} value={op.value}>
+                      {op.label}
+                    </option>
+                  ))}
+                </select>
 
-                  {/* Operator Select */}
-                  <select
-                    value={filter.operator}
-                    onChange={(e) => handleUpdateFilter(filter.id, 'operator', e.target.value)}
-                    className="rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
-                  >
-                    {FILTER_OPERATORS.map((op) => (
-                      <option key={op.value} value={op.value}>
-                        {op.label}
-                      </option>
-                    ))}
-                  </select>
+                {/* Value 1 Input */}
+                {filter.operator !== 'is_empty' && filter.operator !== 'is_not_empty' && (
+                  <input
+                    type="text"
+                    placeholder="Value..."
+                    value={filter.value}
+                    onChange={(e) => handleUpdateFilter(filter.id, 'value', e.target.value)}
+                    className="h-7 min-w-[120px] flex-1 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 text-xs text-[#20242C] placeholder-[#89919F] focus:border-[#B98220] focus:outline-none"
+                  />
+                )}
 
-                  {/* Value 1 Input */}
-                  {filter.operator !== 'is_empty' && filter.operator !== 'is_not_empty' && (
-                    <input
-                      type="text"
-                      placeholder="Value..."
-                      value={filter.value}
-                      onChange={(e) => handleUpdateFilter(filter.id, 'value', e.target.value)}
-                      className="min-w-[120px] flex-1 rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 placeholder-gray-400 focus:border-amber-600 focus:outline-none"
-                    />
-                  )}
+                {/* Value 2 Input */}
+                {filter.operator === 'between' && (
+                  <input
+                    type="text"
+                    placeholder="High value..."
+                    value={filter.value2}
+                    onChange={(e) => handleUpdateFilter(filter.id, 'value2', e.target.value)}
+                    className="h-7 min-w-[100px] flex-1 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 text-xs text-[#20242C] placeholder-[#89919F] focus:border-[#B98220] focus:outline-none"
+                  />
+                )}
 
-                  {/* Value 2 Input */}
-                  {filter.operator === 'between' && (
-                    <input
-                      type="text"
-                      placeholder="High value..."
-                      value={filter.value2}
-                      onChange={(e) => handleUpdateFilter(filter.id, 'value2', e.target.value)}
-                      className="min-w-[100px] flex-1 rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 placeholder-gray-400 focus:border-amber-600 focus:outline-none"
-                    />
-                  )}
-
-                  {/* Delete Filter */}
-                  <button
-                    onClick={() => handleRemoveFilter(filter.id)}
-                    className="rounded p-1 text-gray-400 hover:text-red-600"
-                    title="Remove filter"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+                {/* Delete Filter */}
+                <button
+                  onClick={() => handleRemoveFilter(filter.id)}
+                  className="rounded p-1 text-[#89919F] hover:text-red-600 transition-colors"
+                  title="Remove condition"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Column Visibility Selector Panel */}
       {showColumnDrawer && (
-        <div className="rounded-md border border-gray-200 bg-gray-50 p-3 space-y-2.5">
+        <div className="rounded border border-[#E3E6EB] bg-[#F7F8FA] p-3 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-700">
+            <span className="text-xs font-semibold text-[#20242C]">
               Visible columns ({activeColumns.length} of {columns.length})
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={showAllColumns}
-                className="text-[11px] text-[#C58A16] hover:underline"
+                className="text-[11px] text-[#B98220] hover:underline"
               >
                 Show all
               </button>
-              <span className="text-gray-300">|</span>
+              <span className="text-[#89919F]">·</span>
               <button
                 onClick={hideAllExceptFirst}
-                className="text-[11px] text-gray-500 hover:underline"
+                className="text-[11px] text-[#667085] hover:underline"
               >
                 Reset
               </button>
               <button
                 onClick={() => setShowColumnDrawer(false)}
-                className="rounded p-0.5 text-gray-400 hover:text-gray-700 ml-1"
+                className="rounded p-0.5 text-[#89919F] hover:text-[#20242C] ml-1"
+                aria-label="Close columns panel"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -382,14 +418,14 @@ export default function DataTable({
                   onClick={() => toggleColumnVisibility(col)}
                   className={`flex items-center gap-1.5 rounded border px-2 py-1 text-left text-xs transition-colors ${
                     isVisible
-                      ? 'border-gray-300 bg-white text-gray-800'
-                      : 'border-transparent bg-gray-200/50 text-gray-400'
+                      ? 'border-[#E3E6EB] bg-[#FFFFFF] text-[#20242C]'
+                      : 'border-transparent bg-[#F1F3F5] text-[#89919F]'
                   }`}
                 >
                   {isVisible ? (
-                    <Eye className="h-3 w-3 text-amber-700 shrink-0" />
+                    <Eye className="h-3 w-3 text-[#B98220] shrink-0" />
                   ) : (
-                    <EyeOff className="h-3 w-3 text-gray-400 shrink-0" />
+                    <EyeOff className="h-3 w-3 text-[#89919F] shrink-0" />
                   )}
                   <span className="truncate font-mono text-[11px]">{col}</span>
                 </button>
@@ -399,36 +435,39 @@ export default function DataTable({
         </div>
       )}
 
-      {/* Main Table Container */}
-      <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
-        <div className="overflow-x-auto max-h-[560px]">
+      {/* 3. Analytical Data Table */}
+      <div className="overflow-hidden rounded border border-[#E3E6EB] bg-[#FFFFFF]">
+        <div className="overflow-x-auto max-h-[580px]">
           <table className="w-full border-collapse text-left text-xs">
-            <thead className="sticky top-0 z-10 border-b border-gray-200 bg-gray-50/95 backdrop-blur-xs">
+            <thead className="sticky top-0 z-10 border-b border-[#E3E6EB] bg-[#F7F8FA] text-[#667085]">
               <tr>
-                <th className="w-10 px-2.5 py-2 font-medium text-gray-500 text-center border-r border-gray-200">
+                <th className="w-12 px-2.5 py-2 font-medium text-center border-r border-[#E3E6EB] text-[#89919F]">
                   #
                 </th>
                 {activeColumns.map((col) => {
                   const isSorted = sortState.column === col;
+                  const isNumericCol = numericColumnSet.has(col);
                   return (
                     <th
                       key={col}
                       onClick={() => handleSortClick(col)}
-                      className="cursor-pointer select-none px-3 py-2 font-medium text-gray-600 transition-colors hover:bg-gray-100/70 border-r border-gray-200 last:border-r-0"
+                      className={`cursor-pointer select-none px-3 py-2 font-medium text-[#20242C] hover:bg-[#F1F3F5] transition-colors border-r border-[#E3E6EB] last:border-r-0 ${
+                        isNumericCol ? 'text-right' : 'text-left'
+                      }`}
                     >
-                      <div className="flex items-center justify-between gap-1.5">
-                        <span className="truncate font-mono text-xs text-gray-700">
+                      <div className={`flex items-center gap-1.5 ${isNumericCol ? 'justify-end' : 'justify-between'}`}>
+                        <span className="truncate font-mono text-xs">
                           {col}
                         </span>
-                        <div className="text-gray-400">
+                        <div className="text-[#89919F]">
                           {isSorted ? (
                             sortState.direction === 'asc' ? (
-                              <ChevronUp className="h-3.5 w-3.5 text-amber-700" />
+                              <ChevronUp className="h-3.5 w-3.5 text-[#B98220]" />
                             ) : (
-                              <ChevronDown className="h-3.5 w-3.5 text-amber-700" />
+                              <ChevronDown className="h-3.5 w-3.5 text-[#B98220]" />
                             )
                           ) : (
-                            <ChevronsUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                            <ChevronsUpDown className="h-3 w-3 opacity-30 group-hover:opacity-100" />
                           )}
                         </div>
                       </div>
@@ -438,25 +477,25 @@ export default function DataTable({
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-100 text-gray-800">
+            <tbody className="divide-y divide-[#E3E6EB] text-[#20242C]">
               {pagination.rows.length === 0 ? (
                 <tr>
                   <td
                     colSpan={activeColumns.length + 1}
-                    className="py-12 text-center text-gray-500"
+                    className="py-12 text-center text-[#89919F]"
                   >
                     <div className="mx-auto flex max-w-sm flex-col items-center justify-center space-y-1.5">
-                      <TableProperties className="h-8 w-8 text-gray-300 mb-1" />
-                      <p className="text-xs font-semibold text-gray-700">No matching records found</p>
-                      <p className="text-[11px] text-gray-500">
+                      <TableProperties className="h-7 w-7 text-[#D1D5DB] mb-1" />
+                      <p className="text-xs font-semibold text-[#20242C]">No matching records found</p>
+                      <p className="text-[11px] text-[#89919F]">
                         {isFiltered
-                          ? 'Try adjusting or clearing your current filter criteria.'
+                          ? 'Adjust or clear your active search query and filter criteria.'
                           : 'The active dataset contains no rows.'}
                       </p>
                       {isFiltered && (
                         <button
                           onClick={handleResetFilters}
-                          className="mt-1 text-xs text-[#C58A16] hover:underline"
+                          className="mt-1 text-xs text-[#B98220] font-medium hover:underline"
                         >
                           Clear all filters
                         </button>
@@ -470,22 +509,25 @@ export default function DataTable({
                   return (
                     <tr
                       key={rowIdx}
-                      className="transition-colors hover:bg-gray-50/60"
+                      className="hover:bg-[#F7F8FA] transition-colors"
                     >
-                      <td className="px-2.5 py-1.5 text-center font-mono text-[11px] text-gray-400 border-r border-gray-100">
+                      <td className="px-2.5 py-1.5 text-center font-mono text-[11px] text-[#89919F] border-r border-[#E3E6EB]">
                         {absoluteIndex}
                       </td>
                       {activeColumns.map((col) => {
                         const cellVal = row[col];
                         const isEmpty = cellVal === null || cellVal === undefined || cellVal === '';
+                        const isNumericCol = numericColumnSet.has(col);
                         return (
                           <td
                             key={col}
-                            className="max-w-[260px] truncate px-3 py-1.5 font-mono text-xs border-r border-gray-100 last:border-r-0"
+                            className={`max-w-[280px] truncate px-3 py-1.5 font-mono text-xs border-r border-[#E3E6EB] last:border-r-0 ${
+                              isNumericCol ? 'text-right tabular-nums' : 'text-left'
+                            }`}
                             title={isEmpty ? '(empty)' : String(cellVal)}
                           >
                             {isEmpty ? (
-                              <span className="text-gray-300 italic text-[11px]">null</span>
+                              <span className="text-[#89919F]/60 select-none">—</span>
                             ) : (
                               <span>{String(cellVal)}</span>
                             )}
@@ -500,10 +542,10 @@ export default function DataTable({
           </table>
         </div>
 
-        {/* Footer with Pagination Controls */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/50 px-3 py-2 text-xs">
-          {/* Rows Per Page */}
-          <div className="flex items-center gap-1.5 text-gray-500">
+        {/* 4. Pagination Controls Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#E3E6EB] bg-[#F7F8FA] px-3 py-2 text-xs">
+          {/* Rows per page selector */}
+          <div className="flex items-center gap-1.5 text-[#667085]">
             <span>Rows per page:</span>
             <select
               value={pageSize}
@@ -511,7 +553,7 @@ export default function DataTable({
                 setPageSize(Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className="rounded border border-gray-300 bg-white px-2 py-0.5 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
+              className="h-7 rounded border border-[#E3E6EB] bg-[#FFFFFF] px-2 text-xs text-[#20242C] focus:border-[#B98220] focus:outline-none"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -521,27 +563,28 @@ export default function DataTable({
             </select>
           </div>
 
-          {/* Page Indicator & Buttons */}
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500 text-xs">
-              Page <strong className="font-semibold text-gray-800">{pagination.currentPage}</strong> of{' '}
-              <strong className="font-semibold text-gray-800">{pagination.totalPages}</strong>
+          {/* Record range & page navigation */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[#667085]">
+              Showing <strong className="font-mono text-[#20242C]">{filteredData.length === 0 ? 0 : pagination.startIndex + 1}–{pagination.endIndex}</strong> of <strong className="font-mono text-[#20242C]">{filteredData.length.toLocaleString()}</strong> rows (Page {pagination.currentPage} of {pagination.totalPages})
             </span>
 
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={pagination.currentPage <= 1}
-                className="rounded border border-gray-300 bg-white p-1 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex h-7 w-7 items-center justify-center rounded border border-[#E3E6EB] bg-[#FFFFFF] text-[#20242C] hover:bg-[#F1F3F5] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 title="Previous page"
+                aria-label="Previous page"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
                 disabled={pagination.currentPage >= pagination.totalPages}
-                className="rounded border border-gray-300 bg-white p-1 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex h-7 w-7 items-center justify-center rounded border border-[#E3E6EB] bg-[#FFFFFF] text-[#20242C] hover:bg-[#F1F3F5] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 title="Next page"
+                aria-label="Next page"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>

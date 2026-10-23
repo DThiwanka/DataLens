@@ -2,13 +2,13 @@ import FileUploader from './FileUploader';
 
 export default function EmptyState({ onDataLoaded }) {
   return (
-    <div className="mx-auto max-w-2xl py-12 px-4 sm:px-6">
-      <div className="mb-6 space-y-1 text-center">
-        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-gray-900">
+    <div className="mx-auto max-w-xl py-12 px-4 sm:px-6">
+      <div className="mb-6 space-y-1.5 text-center">
+        <h1 className="text-[26px] font-semibold tracking-tight text-[#20242C]">
           Analyze your data
         </h1>
-        <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto">
-          Upload a CSV, TSV, or delimited text file to inspect statistics, build charts, and clean records locally in your browser.
+        <p className="text-sm text-[#667085] max-w-md mx-auto">
+          Inspect distributions, filter records, build visualizations, and clean columns locally in your browser.
         </p>
       </div>
 

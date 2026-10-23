@@ -33,13 +33,13 @@ export default function DataExplorer({
 
   return (
     <div className="space-y-4">
-      {/* Page Header */}
-      <div className="border-b border-gray-200 pb-3">
-        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
+      {/* Context Header */}
+      <div className="border-b border-[#E3E6EB] pb-3">
+        <h2 className="text-lg font-semibold tracking-tight text-[#20242C]">
           Data Explorer
-        </h1>
-        <p className="mt-0.5 text-xs text-gray-500">
-          Query, filter, and inspect {data.length.toLocaleString()} rows with in-memory execution.
+        </h2>
+        <p className="mt-0.5 text-xs text-[#667085]">
+          {fileName} · {data.length.toLocaleString()} rows · {columns.length} columns · in-memory execution
         </p>
       </div>
 
