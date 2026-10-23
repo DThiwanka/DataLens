@@ -1,195 +1,289 @@
-
-import { useState } from "react";
-import {
-  Activity,
-  BarChart3,
-  Database,
-  FileSpreadsheet,
-  LayoutDashboard,
-  Upload,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
-
-const navigation = [
-  { label: "Overview", icon: LayoutDashboard },
-  { label: "Data Explorer", icon: Database },
-  { label: "AI Insights", icon: Sparkles },
-];
+import { useState, useMemo, useCallback } from 'react';
+import Topbar from './components/Topbar';
+import EmptyState from './components/EmptyState';
+import FileUploader from './components/FileUploader';
+import Dashboard from './pages/Dashboard';
+import DataExplorer from './pages/DataExplorer';
+import CleanStudioPage from './pages/CleanStudioPage';
+import ChartPanel from './components/ChartPanel';
+import { generateDatasetProfile } from './services/dataProfiler';
+import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 export default function App() {
-  const [file, setFile] = useState(null);
-  const [error, setError] = useState("");
+  // Navigation State: 'dashboard' | 'explorer' | 'charts' | 'cleaning'
+  const [activeTab, setActiveTab] = useState('dashboard');
 
-  function handleFile(event) {
-    const selected = event.target.files?.[0];
-    setError("");
+  // Dataset State
+  const [dataset, setDataset] = useState(null);
+  // Modal to switch / upload another dataset
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
-    if (!selected) return;
+  // Dedicated cleaning workspace state
+  const [cleaningState, setCleaningState] = useState({
+    cleanedData: [],
+    cleanedColumns: [],
+    history: [],
+  });
 
-    if (!selected.name.toLowerCase().endsWith(".csv")) {
-      setFile(null);
-      setError("Please select a CSV file.");
-      event.target.value = "";
-      return;
-    }
+  // Chart builder shortcuts from profile
+  const [chartSelection, setChartSelection] = useState({
+    categoryCol: null,
+    measureCol: null,
+  });
 
-    setFile(selected);
-  }
+  // Toast notifications
+  const [toast, setToast] = useState(null);
+
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  }, []);
+
+  // Handle Initial Dataset Ingestion (File or Sample)
+  const handleDataLoaded = useCallback((parsed) => {
+    const { data, columns, fileName, fileSize, delimiter } = parsed;
+
+    const initialDataset = {
+      originalData: data,
+      originalColumns: columns,
+      activeData: data,
+      activeColumns: columns,
+      metadata: {
+        fileName,
+        fileSize,
+        delimiter,
+      },
+    };
+
+    setDataset(initialDataset);
+    setCleaningState({
+      cleanedData: data,
+      cleanedColumns: columns,
+      history: [],
+    });
+    setIsUploadModalOpen(false);
+    setActiveTab('dashboard');
+
+    showToast(
+      `Loaded "${fileName}" (${data.length.toLocaleString()} rows, ${columns.length} columns) successfully!`,
+      'success'
+    );
+  }, [showToast]);
+
+  // Compute profile memoized on active dataset
+  const profile = useMemo(() => {
+    if (!dataset) return null;
+    return generateDatasetProfile(
+      dataset.activeData,
+      dataset.activeColumns,
+      dataset.metadata
+    );
+  }, [dataset]);
+
+  // Handle Clean Studio Transformation
+  const handleApplyTransformation = useCallback((transformResult) => {
+    const { data, columns, action, description } = transformResult;
+
+    setCleaningState((prev) => {
+      const stepEntry = {
+        action,
+        description,
+        timestamp: Date.now(),
+        previousData: prev.cleanedData,
+        previousColumns: prev.cleanedColumns,
+      };
+
+      return {
+        cleanedData: data,
+        cleanedColumns: columns,
+        history: [...prev.history, stepEntry],
+      };
+    });
+
+    showToast(description, 'success');
+  }, [showToast]);
+
+  // Undo latest transformation in Clean Studio
+  const handleUndoTransformation = useCallback(() => {
+    setCleaningState((prev) => {
+      if (prev.history.length === 0) return prev;
+      const lastStep = prev.history[prev.history.length - 1];
+      const newHistory = prev.history.slice(0, -1);
+
+      return {
+        cleanedData: lastStep.previousData,
+        cleanedColumns: lastStep.previousColumns,
+        history: newHistory,
+      };
+    });
+
+    showToast('Undid latest cleaning transformation.', 'info');
+  }, [showToast]);
+
+  // Reset Clean Studio state back to immutable original dataset
+  const handleResetToOriginal = useCallback(() => {
+    if (!dataset) return;
+    setCleaningState({
+      cleanedData: dataset.originalData,
+      cleanedColumns: dataset.originalColumns,
+      history: [],
+    });
+
+    showToast('Reset cleaning workspace to original imported dataset.', 'info');
+  }, [dataset, showToast]);
+
+  // Commit Cleaned Data to be the Active Dataset across Dashboard, Explorer, and Charts
+  const handleCommitCleanedToActive = useCallback(() => {
+    setDataset((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        activeData: cleaningState.cleanedData,
+        activeColumns: cleaningState.cleanedColumns,
+      };
+    });
+
+    showToast(
+      `Applied cleaned data (${cleaningState.cleanedData.length.toLocaleString()} rows) to active Explorer & Charts!`,
+      'success'
+    );
+    setActiveTab('explorer');
+  }, [cleaningState, showToast]);
+
+  // Quick shortcut from column profile to chart
+  const handleSelectColumnForChart = useCallback((colName) => {
+    setChartSelection({
+      categoryCol: null,
+      measureCol: colName,
+    });
+    setActiveTab('charts');
+  }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 md:flex">
-      <aside className="border-b border-slate-200 bg-white p-5 md:min-h-screen md:w-64 md:border-b-0 md:border-r">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="rounded-xl bg-indigo-600 p-2 text-white">
-            <BarChart3 size={24} />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold">DataLens AI</h1>
-            <p className="text-xs text-slate-500">CSV Intelligence</p>
-          </div>
+    <div className="min-h-screen bg-[#0B0E13] text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-white">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl border border-white/10 bg-[#161c26]/95 px-4 py-3 text-xs shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3">
+          {toast.type === 'success' && <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />}
+          {toast.type === 'error' && <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />}
+          {toast.type === 'info' && <Info className="h-4 w-4 text-amber-400 shrink-0" />}
+          <span className="text-slate-200">{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="ml-2 text-slate-400 hover:text-white"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
+      )}
 
-        <nav className="flex gap-2 md:flex-col">
-          {navigation.map(({ label, icon: Icon }, index) => (
-            <button
-              key={label}
-              type="button"
-              className={`flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm ${
-                index === 0
-                  ? "bg-indigo-50 font-semibold text-indigo-700"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <Icon size={18} />
-              {label}
-            </button>
-          ))}
-        </nav>
+      {/* Main Persistent Top Navigation Bar */}
+      <Topbar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        datasetInfo={dataset?.metadata}
+        onOpenNewDatasetModal={() => setIsUploadModalOpen(true)}
+        cleanedData={cleaningState.cleanedData}
+        originalData={dataset?.originalData || []}
+        activeData={dataset?.activeData || []}
+        columns={dataset?.activeColumns || []}
+      />
 
-        <div className="mt-8 hidden rounded-xl bg-slate-50 p-4 md:block">
-          <ShieldCheck className="mb-2 text-emerald-600" size={22} />
-          <p className="text-sm font-semibold">Privacy first</p>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Your analysis will run through your own application services.
-          </p>
-        </div>
-      </aside>
-
-      <main className="min-w-0 flex-1 p-5 md:p-9">
-        <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+      {/* Main Workspace Body */}
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
+        {!dataset ? (
+          <EmptyState onDataLoaded={handleDataLoaded} />
+        ) : (
           <div>
-            <p className="mb-2 text-sm text-slate-500">
-              Workspace / Overview
-            </p>
-            <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
-              Data Analytics Workspace
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Discover patterns and understand your data.
-            </p>
-          </div>
+            {activeTab === 'dashboard' && (
+              <Dashboard
+                profile={profile}
+                onNavigateToTab={setActiveTab}
+                onSelectColumnForChart={handleSelectColumnForChart}
+              />
+            )}
 
-          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            Analytics workspace
-          </div>
-        </header>
+            {activeTab === 'explorer' && (
+              <DataExplorer
+                data={dataset.activeData}
+                columns={dataset.activeColumns}
+                columnProfiles={profile?.columnProfiles || []}
+                fileName={dataset.metadata.fileName}
+                onNotification={(notif) => showToast(notif.message, notif.type)}
+              />
+            )}
 
-        <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            { label: "Total rows", value: "—", icon: Database },
-            { label: "Total columns", value: "—", icon: FileSpreadsheet },
-            { label: "Missing values", value: "—", icon: Activity },
-            { label: "Data quality", value: "Not analyzed", icon: ShieldCheck },
-          ].map(({ label, value, icon: Icon }) => (
-            <div
-              key={label}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm text-slate-500">{label}</span>
-                <Icon size={19} className="text-indigo-600" />
+            {activeTab === 'charts' && (
+              <div className="space-y-4">
+                <div className="border-b border-white/5 pb-3">
+                  <h1 className="text-xl font-bold text-white">Interactive Chart Builder</h1>
+                  <p className="text-xs text-slate-400">
+                    Aggregate and visualize the active dataset with customizable Recharts views.
+                  </p>
+                </div>
+                <ChartPanel
+                  data={dataset.activeData}
+                  columns={dataset.activeColumns}
+                  columnProfiles={profile?.columnProfiles || []}
+                  initialCategoryCol={chartSelection.categoryCol}
+                  initialMeasureCol={chartSelection.measureCol}
+                />
               </div>
-              <p className="text-2xl font-bold">{value}</p>
-            </div>
-          ))}
-        </section>
+            )}
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-9">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="rounded-xl bg-indigo-50 p-3 text-indigo-600">
-              <Upload size={24} />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold">Upload your dataset</h3>
-              <p className="text-sm text-slate-500">
-                Start by selecting a CSV file to analyze.
+            {activeTab === 'cleaning' && (
+              <CleanStudioPage
+                originalData={dataset.originalData}
+                originalColumns={dataset.originalColumns}
+                cleanedData={cleaningState.cleanedData}
+                cleanedColumns={cleaningState.cleanedColumns}
+                history={cleaningState.history}
+                onApplyTransformation={handleApplyTransformation}
+                onUndoTransformation={handleUndoTransformation}
+                onResetToOriginal={handleResetToOriginal}
+                onCommitCleanedToActive={handleCommitCleanedToActive}
+              />
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* Modal: Switch / Upload New Dataset */}
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="relative w-full max-w-2xl rounded-2xl border border-white/10 bg-[#141820] p-6 shadow-2xl">
+            <button
+              onClick={() => setIsUploadModalOpen(false)}
+              className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="mb-4">
+              <h2 className="text-lg font-bold text-white">Upload or Switch Dataset</h2>
+              <p className="text-xs text-slate-400">
+                Load a new CSV or TSV file, or select a sample dataset. All operations run in your browser.
               </p>
             </div>
+
+            <FileUploader onDataLoaded={handleDataLoaded} />
           </div>
+        </div>
+      )}
 
-          <label
-            htmlFor="csv-upload"
-            className="flex min-h-52 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-indigo-400 hover:bg-indigo-50/40"
-          >
-            <FileSpreadsheet size={38} className="mb-4 text-indigo-600" />
-            <span className="font-semibold">
-              Click to choose a CSV file
-            </span>
-            <span className="mt-2 text-sm text-slate-500">
-              CSV format only
-            </span>
-            <input
-              id="csv-upload"
-              type="file"
-              accept=".csv,text/csv"
-              className="sr-only"
-              onChange={handleFile}
-            />
-          </label>
-
-          {error && (
-            <p role="alert" className="mt-4 text-sm text-red-600">
-              {error}
-            </p>
-          )}
-
-          {file && (
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4">
-              <div>
-                <p className="font-semibold text-indigo-950">
-                  {file.name}
-                </p>
-                <p className="mt-1 text-sm text-indigo-700">
-                  {(file.size / 1024).toFixed(1)} KB · Ready for analysis
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setFile(null);
-                  setError("");
-                  document.getElementById("csv-upload").value = "";
-                }}
-                className="rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
-              >
-                Remove file
-              </button>
-            </div>
-          )}
-
-          <p className="mt-4 text-xs leading-5 text-slate-500">
-            This initial version selects a file locally. Upload processing,
-            analysis and report generation will be added in the next stages.
-          </p>
-        </section>
-
-        <footer className="mt-8 flex items-center gap-2 text-xs text-slate-400">
-          <ShieldCheck size={15} />
-          DataLens AI · Local development edition
-        </footer>
-      </main>
+      {/* Footer */}
+      <footer className="border-t border-white/5 bg-[#0B0E13] py-4 text-center text-xs text-slate-500">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6">
+          <p>© {new Date().getFullYear()} DataLens AI • Client-Side Browser In-Memory Architecture</p>
+          <div className="flex items-center gap-4 text-slate-400">
+            <span>Zero Server Latency</span>
+            <span>•</span>
+            <span className="text-emerald-400">Private by Design</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
