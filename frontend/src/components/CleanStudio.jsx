@@ -1,16 +1,14 @@
 import { useState } from 'react';
 import {
-  Wand2,
   Trash2,
   Undo2,
   RotateCcw,
-  CheckCircle2,
+  Check,
   Download,
   CaseSensitive,
   AlignLeft,
   Columns,
   Search,
-  Sparkles,
   ArrowUpDown,
   History,
   FileSpreadsheet,
@@ -28,8 +26,8 @@ import {
   fillMissingValues,
   changeTextCase,
   normalizeNumericStrings,
-} from '../services/dataCleaner';
-import { exportToCsv } from '../services/csvExporter';
+} from '../services/dataCleaner.js';
+import { exportToCsv } from '../services/csvExporter.js';
 
 export default function CleanStudio({
   originalData = [],
@@ -42,7 +40,6 @@ export default function CleanStudio({
   onResetToOriginal,
   onCommitCleanedToActive,
 }) {
-  // Active Operation Tab
   const [activeTab, setActiveTab] = useState('rows'); // 'rows' | 'columns' | 'values' | 'text' | 'history'
 
   // Operation Forms State
@@ -67,7 +64,7 @@ export default function CleanStudio({
 
   const [colsToDrop, setColsToDrop] = useState([]);
 
-  // Quick stats comparison
+  // Stats comparison
   const rowsDiff = cleanedData.length - originalData.length;
   const colsDiff = cleanedColumns.length - originalColumns.length;
 
@@ -104,195 +101,171 @@ export default function CleanStudio({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Top Banner: Inspection & Transformation Summary */}
-      <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 shadow-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-400">
-              <Wand2 className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                Data Cleaning Studio
-                {history.length > 0 && (
-                  <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-xs text-amber-400 font-normal">
-                    {history.length} transformation{history.length === 1 ? '' : 's'} applied
-                  </span>
-                )}
-              </h2>
-              <p className="text-xs text-slate-400">
-                Execute client-side data sanitation, structural adjustments, and corrections.
-              </p>
-            </div>
+    <div className="space-y-4">
+      {/* Top Banner: Status & Actions */}
+      <div className="rounded-md border border-gray-200 bg-white p-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">
+              Cleaning Studio
+            </h2>
+            <p className="text-xs text-gray-500">
+              Transform, clean, and standardize the dataset with reversible operations.
+            </p>
           </div>
 
-          {/* Quick Action Buttons */}
+          {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={onUndoTransformation}
               disabled={history.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-200 transition-all hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Undo latest change"
+              className="inline-flex items-center gap-1 rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              title="Undo last step"
             >
-              <Undo2 className="h-3.5 w-3.5" />
-              <span>Undo Step</span>
+              <Undo2 className="h-3.5 w-3.5 text-gray-500" />
+              <span>Undo</span>
             </button>
 
             <button
               onClick={onResetToOriginal}
               disabled={history.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-300 transition-all hover:bg-rose-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Reset all changes back to original file"
+              className="inline-flex items-center gap-1 rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              title="Reset all changes"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>Reset to Original</span>
-            </button>
-
-            <button
-              onClick={onCommitCleanedToActive}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-2 text-xs font-medium text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)] transition-all hover:bg-emerald-500/25"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>Apply to Active Explorer</span>
+              <RotateCcw className="h-3.5 w-3.5 text-gray-500" />
+              <span>Reset</span>
             </button>
 
             <button
               onClick={() => exportToCsv(cleanedData, cleanedColumns, 'datalens-cleaned-data.csv')}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-400 transition-all hover:bg-amber-500/20"
+              className="inline-flex items-center gap-1 rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              <Download className="h-3.5 w-3.5" />
-              <span>Export Clean CSV</span>
+              <Download className="h-3.5 w-3.5 text-gray-500" />
+              <span>Export CSV</span>
             </button>
-          </div>
-        </div>
 
-        {/* Metrics Diff Bar */}
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-white/5 pt-4 text-xs">
-          <div className="rounded-lg bg-[#0B0E13] p-3 border border-white/5">
-            <span className="text-slate-500 block uppercase tracking-wider text-[10px]">Row Count</span>
-            <div className="mt-0.5 flex items-baseline gap-2">
-              <span className="text-base font-bold text-white">{cleanedData.length.toLocaleString()}</span>
-              {rowsDiff !== 0 && (
-                <span className={`text-[11px] font-mono ${rowsDiff < 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                  {rowsDiff > 0 ? `+${rowsDiff}` : rowsDiff}
-                </span>
-              )}
-            </div>
-            <span className="text-[10px] text-slate-500">Original: {originalData.length.toLocaleString()}</span>
-          </div>
-
-          <div className="rounded-lg bg-[#0B0E13] p-3 border border-white/5">
-            <span className="text-slate-500 block uppercase tracking-wider text-[10px]">Column Count</span>
-            <div className="mt-0.5 flex items-baseline gap-2">
-              <span className="text-base font-bold text-white">{cleanedColumns.length}</span>
-              {colsDiff !== 0 && (
-                <span className={`text-[11px] font-mono ${colsDiff < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                  {colsDiff > 0 ? `+${colsDiff}` : colsDiff}
-                </span>
-              )}
-            </div>
-            <span className="text-[10px] text-slate-500">Original: {originalColumns.length}</span>
-          </div>
-
-          <div className="rounded-lg bg-[#0B0E13] p-3 border border-white/5">
-            <span className="text-slate-500 block uppercase tracking-wider text-[10px]">Integrity Status</span>
-            <div className="mt-0.5 flex items-center gap-1.5 text-emerald-400 font-semibold">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Immutable Origin Preserved</span>
-            </div>
-            <span className="text-[10px] text-slate-500">Zero destructive edits to raw input</span>
-          </div>
-
-          <div className="rounded-lg bg-[#0B0E13] p-3 border border-white/5">
-            <span className="text-slate-500 block uppercase tracking-wider text-[10px]">History Depth</span>
-            <div className="mt-0.5 flex items-baseline gap-2">
-              <span className="text-base font-bold text-amber-400">{history.length}</span>
-              <span className="text-[11px] text-slate-400">operations</span>
-            </div>
-            <span className="text-[10px] text-slate-500">Every step can be reversed</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Operation Categories Navigation Tabs */}
-      <div className="flex overflow-x-auto border-b border-white/10 gap-2 pb-1 text-xs scrollbar-none">
-        {[
-          { id: 'rows', label: '1. Row Sanitation', icon: Trash2 },
-          { id: 'columns', label: '2. Columns & Headers', icon: Columns },
-          { id: 'values', label: '3. Find, Replace & Missing', icon: Search },
-          { id: 'text', label: '4. Text & Numbers', icon: CaseSensitive },
-          { id: 'history', label: `5. Audit Log (${history.length})`, icon: History },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          return (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 whitespace-nowrap rounded-t-lg px-4 py-2.5 font-medium transition-all ${
-                activeTab === tab.id
-                  ? 'border-b-2 border-amber-500 bg-amber-500/10 text-amber-400 font-semibold'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
+              onClick={onCommitCleanedToActive}
+              className="inline-flex items-center gap-1 rounded bg-[#C58A16] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#B45309] transition-colors"
             >
-              <Icon className="h-4 w-4" />
-              <span>{tab.label}</span>
+              <Check className="h-3.5 w-3.5" />
+              <span>Apply to explorer</span>
             </button>
-          );
-        })}
+          </div>
+        </div>
+
+        {/* Diff summary stats */}
+        <div className="mt-3.5 grid grid-cols-2 sm:grid-cols-4 gap-2 border-t border-gray-100 pt-3 text-xs">
+          <div className="rounded bg-gray-50 p-2 border border-gray-200">
+            <span className="text-[10px] text-gray-500 block">Row Count</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-semibold text-gray-900">{cleanedData.length.toLocaleString()}</span>
+              {rowsDiff !== 0 && (
+                <span className={`text-[11px] font-mono font-medium ${rowsDiff < 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                  ({rowsDiff > 0 ? `+${rowsDiff}` : rowsDiff})
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded bg-gray-50 p-2 border border-gray-200">
+            <span className="text-[10px] text-gray-500 block">Column Count</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-semibold text-gray-900">{cleanedColumns.length}</span>
+              {colsDiff !== 0 && (
+                <span className={`text-[11px] font-mono font-medium ${colsDiff < 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+                  ({colsDiff > 0 ? `+${colsDiff}` : colsDiff})
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded bg-gray-50 p-2 border border-gray-200">
+            <span className="text-[10px] text-gray-500 block">Raw Backup</span>
+            <span className="font-medium text-emerald-700">Preserved intact</span>
+          </div>
+
+          <div className="rounded bg-gray-50 p-2 border border-gray-200">
+            <span className="text-[10px] text-gray-500 block">Applied Steps</span>
+            <span className="font-semibold text-gray-900">{history.length}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Tab 1: Row Sanitation */}
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 gap-1 text-xs overflow-x-auto">
+        {[
+          { id: 'rows', label: 'Rows' },
+          { id: 'columns', label: 'Columns & Headers' },
+          { id: 'values', label: 'Values & Missing' },
+          { id: 'text', label: 'Text & Numbers' },
+          { id: 'history', label: `Audit Log (${history.length})` },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-3 py-2 font-medium border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'border-amber-600 text-gray-900 font-semibold'
+                : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab 1: Rows */}
       {activeTab === 'rows' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Duplicate Rows */}
-          <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Trash2 className="h-4 w-4 text-amber-400" />
-              Deduplicate Rows
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Scans all rows and drops exact duplicates, keeping the first occurrence.
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Deduplicate */}
+          <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-gray-500" />
+              <h3 className="text-xs font-semibold text-gray-900">Deduplicate Rows</h3>
+            </div>
+            <p className="text-xs text-gray-500">
+              Identify and remove identical duplicate records, retaining the first occurrence.
             </p>
             <button
               onClick={() => handleApply(removeDuplicateRows(cleanedData, cleanedColumns))}
-              className="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 transition-all"
+              className="mt-2 w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Remove Duplicate Rows
+              Remove duplicates
             </button>
           </div>
 
           {/* Remove Empty Rows */}
-          <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Trash2 className="h-4 w-4 text-amber-400" />
-              Remove Empty Rows
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Removes rows where every single cell contains only whitespace or null.
+          <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-gray-500" />
+              <h3 className="text-xs font-semibold text-gray-900">Remove Empty Rows</h3>
+            </div>
+            <p className="text-xs text-gray-500">
+              Discard rows where every single cell is null or empty.
             </p>
             <button
               onClick={() => handleApply(removeEmptyRows(cleanedData, cleanedColumns))}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10 transition-all"
+              className="mt-2 w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Remove Blank Rows
+              Remove blank rows
             </button>
           </div>
 
           {/* Remove Empty Columns */}
-          <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Columns className="h-4 w-4 text-amber-400" />
-              Remove Empty Columns
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Detects and removes entire columns that do not have any non-empty cell.
+          <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <Columns className="h-4 w-4 text-gray-500" />
+              <h3 className="text-xs font-semibold text-gray-900">Remove Empty Columns</h3>
+            </div>
+            <p className="text-xs text-gray-500">
+              Discard columns that contain zero non-empty values across all rows.
             </p>
             <button
               onClick={() => handleApply(removeEmptyColumns(cleanedData, cleanedColumns))}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10 transition-all"
+              className="mt-2 w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Drop Blank Columns
+              Drop blank columns
             </button>
           </div>
         </div>
@@ -300,68 +273,59 @@ export default function CleanStudio({
 
       {/* Tab 2: Columns & Headers */}
       {activeTab === 'columns' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Header Normalization */}
-          <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <AlignLeft className="h-4 w-4 text-amber-400" />
-              Normalize Column Headers
-            </h3>
-            <p className="text-xs text-slate-400">
-              Standardize all header names to clean programmatic conventions.
-            </p>
-            <div className="space-y-2">
-              <label className="text-[11px] font-medium text-slate-400 uppercase">Target Format</label>
-              <select
-                value={headerStyle}
-                onChange={(e) => setHeaderStyle(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
-              >
-                <option value="snake_case">snake_case (e.g. order_date)</option>
-                <option value="camelCase">camelCase (e.g. orderDate)</option>
-                <option value="UPPERCASE">UPPERCASE (e.g. ORDER_DATE)</option>
-                <option value="Title Case">Title Case (e.g. Order Date)</option>
-              </select>
+          <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <AlignLeft className="h-4 w-4 text-gray-500" />
+              <h3 className="text-xs font-semibold text-gray-900">Normalize Column Headers</h3>
             </div>
+            <p className="text-xs text-gray-500">
+              Convert all column names into standard programmatic casing.
+            </p>
+            <select
+              value={headerStyle}
+              onChange={(e) => setHeaderStyle(e.target.value)}
+              className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
+            >
+              <option value="snake_case">snake_case (e.g. order_date)</option>
+              <option value="camelCase">camelCase (e.g. orderDate)</option>
+              <option value="UPPERCASE">UPPERCASE (e.g. ORDER_DATE)</option>
+              <option value="Title Case">Title Case (e.g. Order Date)</option>
+            </select>
             <button
               onClick={() => handleApply(normalizeHeaders(cleanedData, cleanedColumns, headerStyle))}
-              className="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 transition-all"
+              className="w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Apply Header Normalization
+              Normalize headers
             </button>
           </div>
 
           {/* Rename Column */}
-          <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Columns className="h-4 w-4 text-amber-400" />
-              Rename Specific Column
-            </h3>
+          <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <Columns className="h-4 w-4 text-gray-500" />
+              <h3 className="text-xs font-semibold text-gray-900">Rename Column</h3>
+            </div>
             <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[11px] font-medium text-slate-400 uppercase">Current Column</label>
-                <select
-                  value={renameOldCol}
-                  onChange={(e) => setRenameOldCol(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
-                >
-                  {cleanedColumns.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-slate-400 uppercase">New Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. customer_email"
-                  value={renameNewCol}
-                  onChange={(e) => setRenameNewCol(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
-                />
-              </div>
+              <select
+                value={renameOldCol}
+                onChange={(e) => setRenameOldCol(e.target.value)}
+                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
+              >
+                {cleanedColumns.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="New name..."
+                value={renameNewCol}
+                onChange={(e) => setRenameNewCol(e.target.value)}
+                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 placeholder-gray-400 focus:border-amber-600 focus:outline-none"
+              />
             </div>
             <button
               onClick={() => {
@@ -371,69 +335,68 @@ export default function CleanStudio({
                 }
               }}
               disabled={!renameNewCol.trim()}
-              className="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 disabled:opacity-40 transition-all"
+              className="w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
-              Rename Column
+              Rename
             </button>
           </div>
 
-          {/* Reorder and Drop Columns Panel */}
-          <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-4 md:col-span-2">
+          {/* Reorder and Drop Columns */}
+          <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-2.5 md:col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <ArrowUpDown className="h-4 w-4 text-amber-400" />
-                  Reorder or Drop Selected Columns
+                <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-2">
+                  <ArrowUpDown className="h-4 w-4 text-gray-500" />
+                  Reorder or Drop Columns
                 </h3>
-                <p className="text-xs text-slate-400">
-                  Select columns to drop, or use the arrows to move column positions.
+                <p className="text-xs text-gray-500">
+                  Select columns to remove, or shift positions horizontally.
                 </p>
               </div>
-
               {colsToDrop.length > 0 && (
                 <button
                   onClick={executeDropColumns}
-                  className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/20"
+                  className="rounded border border-red-300 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
                 >
-                  Drop Selected ({colsToDrop.length})
+                  Drop selected ({colsToDrop.length})
                 </button>
               )}
             </div>
 
-            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
+            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
               {cleanedColumns.map((col, idx) => {
                 const isSelectedToDrop = colsToDrop.includes(col);
                 return (
                   <div
                     key={col}
-                    className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs ${
+                    className={`flex items-center gap-1.5 rounded border px-2 py-1 text-xs ${
                       isSelectedToDrop
-                        ? 'border-rose-500/40 bg-rose-500/10 text-rose-300'
-                        : 'border-white/10 bg-[#0B0E13] text-slate-200'
+                        ? 'border-red-300 bg-red-50 text-red-700'
+                        : 'border-gray-200 bg-gray-50 text-gray-800'
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={isSelectedToDrop}
                       onChange={() => handleDropColumnToggle(col)}
-                      className="rounded border-white/10 bg-[#141820] text-rose-500 focus:ring-0"
+                      className="rounded border-gray-300 text-red-600 focus:ring-0"
                     />
                     <span className="font-mono text-xs">{col}</span>
 
-                    <div className="flex items-center gap-0.5 ml-2 border-l border-white/10 pl-1.5">
+                    <div className="flex items-center gap-0.5 ml-1 border-l border-gray-200 pl-1">
                       <button
                         onClick={() => executeMoveColumn(col, 'left')}
                         disabled={idx === 0}
-                        className="px-1 text-slate-400 hover:text-white disabled:opacity-20"
-                        title="Move column left"
+                        className="px-1 text-gray-400 hover:text-gray-700 disabled:opacity-20"
+                        title="Move left"
                       >
                         ←
                       </button>
                       <button
                         onClick={() => executeMoveColumn(col, 'right')}
                         disabled={idx === cleanedColumns.length - 1}
-                        className="px-1 text-slate-400 hover:text-white disabled:opacity-20"
-                        title="Move column right"
+                        className="px-1 text-gray-400 hover:text-gray-700 disabled:opacity-20"
+                        title="Move right"
                       >
                         →
                       </button>
@@ -446,65 +409,53 @@ export default function CleanStudio({
         </div>
       )}
 
-      {/* Tab 3: Find, Replace & Missing Values */}
+      {/* Tab 3: Values & Missing */}
       {activeTab === 'values' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Find & Replace */}
-          <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Search className="h-4 w-4 text-amber-400" />
-              Find & Replace
-            </h3>
+          <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-gray-500" />
+              <h3 className="text-xs font-semibold text-gray-900">Find & Replace</h3>
+            </div>
             <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[11px] font-medium text-slate-400 uppercase">In Column</label>
-                <select
-                  value={findCol}
-                  onChange={(e) => setFindCol(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
-                >
-                  <option value="all">All Columns</option>
-                  {cleanedColumns.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-slate-400 uppercase">Match Type</label>
-                <select
-                  value={matchType}
-                  onChange={(e) => setMatchType(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
-                >
-                  <option value="exact">Exact Cell Match</option>
-                  <option value="contains">Contains Substring</option>
-                </select>
-              </div>
+              <select
+                value={findCol}
+                onChange={(e) => setFindCol(e.target.value)}
+                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
+              >
+                <option value="all">All columns</option>
+                {cleanedColumns.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={matchType}
+                onChange={(e) => setMatchType(e.target.value)}
+                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
+              >
+                <option value="exact">Exact match</option>
+                <option value="contains">Substring</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[11px] font-medium text-slate-400 uppercase">Find Text</label>
-                <input
-                  type="text"
-                  placeholder="e.g. N/A"
-                  value={findValue}
-                  onChange={(e) => setFindValue(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-slate-400 uppercase">Replace With</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Unknown"
-                  value={replaceValue}
-                  onChange={(e) => setReplaceValue(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Find value..."
+                value={findValue}
+                onChange={(e) => setFindValue(e.target.value)}
+                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 placeholder-gray-400 focus:border-amber-600 focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Replace with..."
+                value={replaceValue}
+                onChange={(e) => setReplaceValue(e.target.value)}
+                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 placeholder-gray-400 focus:border-amber-600 focus:outline-none"
+              />
             </div>
 
             <button
@@ -521,60 +472,51 @@ export default function CleanStudio({
                 }
               }}
               disabled={findValue === ''}
-              className="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 disabled:opacity-40 transition-all"
+              className="w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
-              Replace Values
+              Replace values
             </button>
           </div>
 
           {/* Fill Missing Values */}
-          <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-amber-400" />
-              Impute / Fill Missing Values
-            </h3>
+          <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <Columns className="h-4 w-4 text-gray-500" />
+              <h3 className="text-xs font-semibold text-gray-900">Fill Missing Values</h3>
+            </div>
             <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[11px] font-medium text-slate-400 uppercase">Target Column</label>
-                <select
-                  value={fillCol}
-                  onChange={(e) => setFillCol(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
-                >
-                  {cleanedColumns.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-slate-400 uppercase">Strategy</label>
-                <select
-                  value={fillStrategy}
-                  onChange={(e) => setFillStrategy(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
-                >
-                  <option value="custom">Custom String Value</option>
-                  <option value="zero">Fill with Zero (0)</option>
-                  <option value="unknown">Fill with &quot;Unknown&quot;</option>
-                  <option value="mean">Column Mean (Numeric)</option>
-                  <option value="median">Column Median (Numeric)</option>
-                </select>
-              </div>
+              <select
+                value={fillCol}
+                onChange={(e) => setFillCol(e.target.value)}
+                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
+              >
+                {cleanedColumns.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={fillStrategy}
+                onChange={(e) => setFillStrategy(e.target.value)}
+                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
+              >
+                <option value="custom">Custom value</option>
+                <option value="zero">Fill zero (0)</option>
+                <option value="unknown">Fill &quot;Unknown&quot;</option>
+                <option value="mean">Column mean (numeric)</option>
+                <option value="median">Column median (numeric)</option>
+              </select>
             </div>
 
             {fillStrategy === 'custom' && (
-              <div>
-                <label className="text-[11px] font-medium text-slate-400 uppercase">Custom Replacement</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Not Provided"
-                  value={customFillValue}
-                  onChange={(e) => setCustomFillValue(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Custom replacement value..."
+                value={customFillValue}
+                onChange={(e) => setCustomFillValue(e.target.value)}
+                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 placeholder-gray-400 focus:border-amber-600 focus:outline-none"
+              />
             )}
 
             <button
@@ -587,9 +529,9 @@ export default function CleanStudio({
                   })
                 );
               }}
-              className="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 transition-all"
+              className="w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Fill Missing Cells
+              Fill missing values
             </button>
           </div>
         </div>
@@ -597,37 +539,37 @@ export default function CleanStudio({
 
       {/* Tab 4: Text & Numbers */}
       {activeTab === 'text' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Trim Whitespace */}
-          <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <AlignLeft className="h-4 w-4 text-amber-400" />
-              Trim Whitespace
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Strips leading and trailing spaces from all text cells across the entire dataset.
+          <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <AlignLeft className="h-4 w-4 text-gray-500" />
+              <h3 className="text-xs font-semibold text-gray-900">Trim Whitespace</h3>
+            </div>
+            <p className="text-xs text-gray-500">
+              Remove leading and trailing spaces from all text cells across the dataset.
             </p>
             <button
               onClick={() => handleApply(trimWhitespace(cleanedData, cleanedColumns, 'all'))}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10 transition-all"
+              className="w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Trim All Text Cells
+              Trim all text cells
             </button>
           </div>
 
           {/* Change Text Case */}
-          <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <CaseSensitive className="h-4 w-4 text-amber-400" />
-              Convert Text Case
-            </h3>
-            <div className="space-y-2">
+          <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <CaseSensitive className="h-4 w-4 text-gray-500" />
+              <h3 className="text-xs font-semibold text-gray-900">Change Text Case</h3>
+            </div>
+            <div className="space-y-1.5">
               <select
                 value={caseCol}
                 onChange={(e) => setCaseCol(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
               >
-                <option value="all">All Text Columns</option>
+                <option value="all">All text columns</option>
                 {cleanedColumns.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -637,7 +579,7 @@ export default function CleanStudio({
               <select
                 value={caseType}
                 onChange={(e) => setCaseType(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+                className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
               >
                 <option value="lowercase">lowercase</option>
                 <option value="UPPERCASE">UPPERCASE</option>
@@ -653,25 +595,25 @@ export default function CleanStudio({
                   })
                 )
               }
-              className="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 transition-all"
+              className="w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Apply Casing
+              Apply casing
             </button>
           </div>
 
           {/* Normalize Numeric Strings */}
-          <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-amber-400" />
-              Clean Numeric Strings
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Explicitly strips currency symbols ($, €, £), commas, and % from numeric text columns.
+          <div className="rounded-md border border-gray-200 bg-white p-3.5 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <Columns className="h-4 w-4 text-gray-500" />
+              <h3 className="text-xs font-semibold text-gray-900">Clean Numbers</h3>
+            </div>
+            <p className="text-xs text-gray-500">
+              Strip currency symbols ($, €, £), commas, and percent signs from numeric text.
             </p>
             <select
               value={numericCol}
               onChange={(e) => setNumericCol(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-[#0B0E13] px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+              className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-600 focus:outline-none"
             >
               {cleanedColumns.map((c) => (
                 <option key={c} value={c}>
@@ -687,51 +629,51 @@ export default function CleanStudio({
                   })
                 )
               }
-              className="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400 hover:bg-amber-500/20 transition-all"
+              className="w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Clean & Coerce Numbers
+              Clean numbers
             </button>
           </div>
         </div>
       )}
 
-      {/* Tab 5: Transformation History Audit Log */}
+      {/* Tab 5: Audit Log */}
       {activeTab === 'history' && (
-        <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 space-y-4">
+        <div className="rounded-md border border-gray-200 bg-white p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <History className="h-4 w-4 text-amber-400" />
-              Transformation Stack & Audit Log
+            <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-2">
+              <History className="h-4 w-4 text-gray-500" />
+              Transformation History
             </h3>
             {history.length > 0 && (
-              <span className="text-xs text-slate-400">
-                Most recent operation is at the top
+              <span className="text-[11px] text-gray-400">
+                Most recent operation at top
               </span>
             )}
           </div>
 
           {history.length === 0 ? (
-            <p className="text-xs text-slate-400 py-6 text-center">
-              No cleaning transformations have been applied yet. Apply operations above to start sanitizing your data.
+            <p className="text-xs text-gray-400 py-6 text-center">
+              No cleaning transformations have been applied yet.
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {[...history].reverse().map((step, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between rounded-lg border border-white/5 bg-[#0B0E13] p-3 text-xs"
+                  className="flex items-center justify-between rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="rounded bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 font-mono text-[10px] text-amber-400 font-semibold">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-white border border-gray-200 px-1.5 py-0.5 font-mono text-[10px] text-gray-600 font-medium">
                       #{history.length - idx}
                     </span>
                     <div>
-                      <p className="font-semibold text-white">{step.action}</p>
-                      <p className="text-slate-400 text-[11px]">{step.description}</p>
+                      <span className="font-medium text-gray-900">{step.action}: </span>
+                      <span className="text-gray-500">{step.description}</span>
                     </div>
                   </div>
 
-                  <span className="text-[10px] text-slate-500 font-mono">
+                  <span className="text-[10px] text-gray-400 font-mono">
                     {step.timestamp ? new Date(step.timestamp).toLocaleTimeString() : '—'}
                   </span>
                 </div>
@@ -741,42 +683,42 @@ export default function CleanStudio({
         </div>
       )}
 
-      {/* Live Preview Table of Cleaned Data */}
-      <div className="rounded-xl border border-white/8 bg-[#141820]/90 p-5 shadow-xl space-y-3">
+      {/* Cleaned Dataset Preview Table */}
+      <div className="rounded-md border border-gray-200 bg-white p-4 space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
-            <span className="text-sm font-semibold text-white">Cleaned Dataset Live Preview</span>
+            <FileSpreadsheet className="h-4 w-4 text-gray-500" />
+            <h3 className="text-xs font-semibold text-gray-900">Cleaned Data Preview</h3>
           </div>
-          <span className="text-xs text-slate-400">
-            Showing first 10 rows of {cleanedData.length.toLocaleString()} cleaned rows
+          <span className="text-[11px] text-gray-500">
+            First 10 of {cleanedData.length.toLocaleString()} rows
           </span>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-white/5 max-h-72 scrollbar-thin">
+        <div className="overflow-x-auto rounded border border-gray-200 max-h-60">
           <table className="w-full border-collapse text-left text-xs">
-            <thead className="bg-[#161c26] text-slate-400 sticky top-0">
+            <thead className="bg-gray-50 text-gray-600 sticky top-0 border-b border-gray-200">
               <tr>
-                <th className="px-3 py-2 border-r border-white/5 text-center">#</th>
+                <th className="px-2.5 py-1.5 border-r border-gray-200 text-center w-8">#</th>
                 {cleanedColumns.map((col) => (
-                  <th key={col} className="px-3 py-2 font-mono border-r border-white/5 last:border-r-0">
+                  <th key={col} className="px-2.5 py-1.5 font-mono border-r border-gray-200 last:border-r-0">
                     {col}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 text-slate-300">
+            <tbody className="divide-y divide-gray-100 text-gray-800">
               {cleanedData.slice(0, 10).map((row, rIdx) => (
-                <tr key={rIdx} className="hover:bg-white/[0.02]">
-                  <td className="px-3 py-2 text-center text-slate-500 border-r border-white/5 font-mono">
+                <tr key={rIdx} className="hover:bg-gray-50/50">
+                  <td className="px-2.5 py-1 text-center text-gray-400 border-r border-gray-100 font-mono">
                     {rIdx + 1}
                   </td>
                   {cleanedColumns.map((col) => {
                     const val = row[col];
                     const isEmpty = val === null || val === undefined || val === '';
                     return (
-                      <td key={col} className="px-3 py-2 border-r border-white/5 last:border-r-0 font-mono truncate max-w-[200px]">
-                        {isEmpty ? <span className="text-slate-600 italic">null</span> : String(val)}
+                      <td key={col} className="px-2.5 py-1 border-r border-gray-100 last:border-r-0 font-mono truncate max-w-[180px]">
+                        {isEmpty ? <span className="text-gray-300 italic text-[11px]">null</span> : String(val)}
                       </td>
                     );
                   })}

@@ -1,6 +1,5 @@
 import DataTable from '../components/DataTable';
-import { Table2 } from 'lucide-react';
-import { exportToCsv } from '../services/csvExporter';
+import { exportToCsv } from '../services/csvExporter.js';
 
 export default function DataExplorer({
   data = [],
@@ -15,7 +14,7 @@ export default function DataExplorer({
       if (onNotification) {
         onNotification({
           type: 'success',
-          message: `Successfully exported ${filteredRows.length.toLocaleString()} filtered rows to CSV!`,
+          message: `Exported ${filteredRows.length.toLocaleString()} rows to CSV.`,
         });
       }
     } catch (err) {
@@ -30,20 +29,17 @@ export default function DataExplorer({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
-        <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <Table2 className="h-5 w-5 text-amber-400" />
-            Data Explorer
-          </h1>
-          <p className="text-xs text-slate-400">
-            Search, filter, sort, and paginate through records entirely in-memory.
-          </p>
-        </div>
+      {/* Page Header */}
+      <div className="border-b border-gray-200 pb-3">
+        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
+          Data Explorer
+        </h1>
+        <p className="mt-0.5 text-xs text-gray-500">
+          Query, filter, and inspect {data.length.toLocaleString()} rows with in-memory execution.
+        </p>
       </div>
 
-      {/* Main Table Component */}
+      {/* Main Table */}
       <DataTable
         data={data}
         columns={columns}

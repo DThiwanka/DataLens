@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   LayoutDashboard,
   Table2,
@@ -6,10 +6,7 @@ import {
   Wand2,
   Upload,
   Download,
-  ShieldCheck,
-  FileSpreadsheet,
   ChevronDown,
-  Sparkles,
 } from 'lucide-react';
 import { exportToCsv } from '../services/csvExporter';
 
@@ -24,13 +21,25 @@ export default function Topbar({
   columns,
 }) {
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const dropdownRef = useRef(null);
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard & Profiling', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'explorer', label: 'Data Explorer', icon: Table2 },
     { id: 'charts', label: 'Chart Builder', icon: BarChart3 },
     { id: 'cleaning', label: 'Cleaning Studio', icon: Wand2 },
   ];
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowExportMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleExportFull = () => {
     exportToCsv(activeData, columns, 'datalens-analysis-dataset.csv');
@@ -48,26 +57,21 @@ export default function Topbar({
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/8 bg-[#0B0E13]/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        {/* Brand & Logo */}
+    <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
+      <div className="mx-auto flex h-13 max-w-7xl items-center justify-between px-4 sm:px-6">
+        {/* Left: Brand and Navigation */}
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-black shadow-[0_0_20px_rgba(245,158,11,0.4)]">
-              <Sparkles className="h-5 w-5 fill-black stroke-black" />
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-[#C58A16] text-white font-semibold text-xs">
+              DL
             </div>
-            <div>
-              <span className="text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
-                DataLens <span className="text-amber-400 font-mono text-xs font-semibold px-1 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">AI</span>
-              </span>
-              <span className="block text-[10px] text-slate-400 tracking-wider uppercase font-medium">
-                Client-Side Engine
-              </span>
-            </div>
+            <span className="text-sm font-semibold tracking-tight text-gray-900">
+              DataLens
+            </span>
           </div>
 
-          {/* Navigation Tabs (Desktop) */}
-          <nav className="hidden lg:flex items-center gap-1 rounded-xl border border-white/5 bg-[#141820]/80 p-1">
+          {/* Navigation Links (Desktop) */}
+          <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -75,10 +79,10 @@ export default function Topbar({
                 <button
                   key={item.id}
                   onClick={() => onTabChange(item.id)}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
                     isActive
-                      ? 'bg-amber-500 text-black font-semibold shadow-sm'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -89,72 +93,62 @@ export default function Topbar({
           </nav>
         </div>
 
-        {/* Right Section: Active Dataset Info Pill & Action Buttons */}
-        <div className="flex items-center gap-3">
+        {/* Right: Dataset Info and Action Buttons */}
+        <div className="flex items-center gap-2.5">
           {datasetInfo && (
-            <div className="hidden sm:flex items-center gap-3 rounded-lg border border-white/10 bg-[#141820]/90 px-3 py-1.5 text-xs text-slate-300">
-              <div className="flex items-center gap-1.5 font-mono text-slate-200">
-                <FileSpreadsheet className="h-3.5 w-3.5 text-amber-400" />
-                <span className="max-w-[140px] truncate">{datasetInfo.fileName}</span>
-              </div>
-              <span className="text-slate-600">|</span>
-              <span className="font-mono text-slate-400">
-                {activeData.length.toLocaleString()} rows • {columns.length} cols
+            <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500 mr-2 border-r border-gray-200 pr-3">
+              <span className="font-medium text-gray-800 max-w-[140px] truncate" title={datasetInfo.fileName}>
+                {datasetInfo.fileName}
               </span>
-              <span className="text-slate-600">|</span>
-              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
-                <ShieldCheck className="h-3 w-3" />
-                Local
+              <span>•</span>
+              <span className="font-mono text-gray-600">
+                {activeData.length.toLocaleString()} rows, {columns.length} cols
               </span>
             </div>
           )}
 
-          {/* Upload New / Change Dataset Button */}
+          {/* Change Dataset Button */}
           <button
             onClick={onOpenNewDatasetModal}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition-all hover:border-amber-500/30 hover:bg-white/10"
-            title="Import or Switch Dataset"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            <Upload className="h-3.5 w-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Change Dataset</span>
+            <Upload className="h-3.5 w-3.5 text-gray-500" />
+            <span className="hidden sm:inline">Change dataset</span>
           </button>
 
           {/* Export Dropdown */}
-          <div className="relative">
+          <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowExportMenu((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)] transition-all hover:bg-amber-500/25"
+              className="inline-flex items-center gap-1 rounded-md bg-[#C58A16] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#B45309] transition-colors"
             >
               <Download className="h-3.5 w-3.5" />
               <span>Export</span>
-              <ChevronDown className="h-3 w-3 opacity-70" />
+              <ChevronDown className="h-3 w-3 opacity-80" />
             </button>
 
             {showExportMenu && (
-              <div
-                className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-[#161c26] p-1.5 shadow-2xl z-50 text-xs"
-                onClick={() => setShowExportMenu(false)}
-              >
+              <div className="absolute right-0 mt-1.5 w-52 rounded-md border border-gray-200 bg-white p-1 shadow-md z-50 text-xs">
                 <button
                   onClick={handleExportFull}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-slate-200 hover:bg-white/5 hover:text-amber-400"
+                  className="flex w-full items-center justify-between rounded px-2.5 py-1.5 text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                 >
                   <span>Export Active Dataset</span>
-                  <span className="text-[10px] text-slate-500 font-mono">CSV</span>
+                  <span className="text-[10px] text-gray-400 font-mono">CSV</span>
                 </button>
                 <button
                   onClick={handleExportCleaned}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-slate-200 hover:bg-white/5 hover:text-amber-400"
+                  className="flex w-full items-center justify-between rounded px-2.5 py-1.5 text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                 >
                   <span>Export Cleaned Dataset</span>
-                  <span className="text-[10px] text-slate-500 font-mono">CSV</span>
+                  <span className="text-[10px] text-gray-400 font-mono">CSV</span>
                 </button>
                 <button
                   onClick={handleExportOriginal}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-slate-200 hover:bg-white/5 hover:text-amber-400"
+                  className="flex w-full items-center justify-between rounded px-2.5 py-1.5 text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                 >
                   <span>Export Original Dataset</span>
-                  <span className="text-[10px] text-slate-500 font-mono">CSV</span>
+                  <span className="text-[10px] text-gray-400 font-mono">CSV</span>
                 </button>
               </div>
             )}
@@ -162,8 +156,8 @@ export default function Topbar({
         </div>
       </div>
 
-      {/* Navigation Tabs (Mobile & Tablet) */}
-      <div className="flex lg:hidden overflow-x-auto border-t border-white/5 px-4 py-2 gap-2 scrollbar-none">
+      {/* Navigation Tabs (Mobile) */}
+      <div className="flex md:hidden overflow-x-auto border-t border-gray-200 px-3 py-1.5 gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -171,10 +165,10 @@ export default function Topbar({
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
-              className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-1 text-xs font-medium transition-colors ${
                 isActive
-                  ? 'bg-amber-500 text-black font-semibold'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
